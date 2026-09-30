@@ -1,14 +1,19 @@
 # SmartSearch AI Integration Examples
 
-Runnable examples that show how to integrate with **SmartSearch AI** from Java and Python.
+Runnable examples that show how to integrate with **SmartSearch AI** from Java and Python. They
+are written for developers who have never used SmartSearch AI: follow the learning path step by
+step, and read each example's comments alongside its output.
 
 > **Status:** preview. Java examples are available; Python examples will follow the Python SDK.
 
 ## What you can do
 
-- **Register users and give them access** (Principal Exchange). Create users from your own system, link them to your identity provider, and give them workspace access with no passwords to manage.
-- **Search Workplace as your users.** Search, query and chat (with streaming) across the workspaces each user can see.
-- **Search a SmartSearch AI project.** Keyword, filtered, faceted, semantic and hybrid AI search.
+- **Search a SmartSearch AI project**: keyword, filtered, sorted, faceted, semantic and hybrid AI
+  search, with reranking and precision control.
+- **Search Workplace**: search, answers with sources, and chat (with streaming) over your
+  company documents, as your service or as each of your users.
+- **Register your users and give them access** (Principal Exchange): create users from your own
+  system, linked to your identity provider, with no passwords to manage.
 
 ## Prerequisites
 
@@ -17,44 +22,43 @@ Runnable examples that show how to integrate with **SmartSearch AI** from Java a
 | Runtime | Java 21+ | Python 3.10+ |
 | SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` (coming soon) |
 
-## The keys you need
+## What your administrator gives you
 
-Your SmartSearch AI administrator gives you:
+| Item | Example value | Used for |
+|---|---|---|
+| API URL | `https://api.your-company.example.com` | Project search and Workplace |
+| Admin URL | `https://admin.your-company.example.com` | Registering users |
+| Auth URL and realm | `https://auth.your-company.example.com`, `your-realm` | Getting access tokens (the SDK does this) |
+| Service key (ID `svc-…` and secret) | `svc-your-key-id` | Your application's identity |
+| Project, workspace and source IDs | `your-project-id` | What to search |
+| Integration and tenant IDs | `your-integration-id` | Registering users |
 
-| Item | Used for |
-|---|---|
-| Service key (client ID `svc-…` and secret) | Registering users, and searching as your service |
-| Auth, API and admin base URLs, and realm | Where the SDK connects |
-| Integration ID and tenant ID | Which provisioning integration your service may use |
-| Workspace, source and project IDs | What to search |
+Keep secrets in environment variables (see [`.env.example`](.env.example), which explains every
+setting). **Never commit them, and never put an administrator's personal login or token in your
+application.**
 
-Keep secrets in environment variables (see `.env.example`). **Never commit them, and never
-put an administrator's personal token in your application.**
+## Learning path
 
-## Two ways to create users (Principal Exchange)
+The [Java README](examples/java/README.md#learning-path) lists every step with its run command.
+In short:
 
-1. **Admin UI.** An administrator creates the user, who receives a temporary password and
-   sets their own password at first sign-in. No code is needed (see
-   [Administrator setup](examples/java/README.md#00-administrator-setup-one-time-no-code)).
-2. **API integration** (these examples). Your backend creates users with its service key.
-   Users are linked to your identity provider, so there are no SmartSearch AI passwords.
+1. **Getting started**: connect with your service key (`ConnectAndCheckAccess`).
+2. **Project search**: from a first search to filters, sorting, facets, and semantic, hybrid and
+   reranked search, one capability per example. [SEARCH_GUIDE.md](examples/java/SEARCH_GUIDE.md)
+   explains the concepts.
+3. **Workplace as your service**: search (a results list), query (one question, one answer with
+   its sources, or the sources only; streamed or not; with or without memory), and chat (a
+   conversation with follow-up questions).
+4. **Your users**: register users, give them access, and search as them.
 
-## Examples
+## Two ways to create users
 
-| # | Example | Java | Python |
-|---|---|---|---|
-| 00 | Administrator setup (one time, Admin UI, no code) | [README](examples/java/README.md#00-administrator-setup-one-time-no-code) | |
-| 01 | Connect with a service key | `Ex01ServiceConnect` | coming soon |
-| 02 | Register users | `Ex02RegisterUsers` | coming soon |
-| 03 | Register users with workspace access | `Ex03OnboardWithAccess` | coming soon |
-| 04 | Search Workplace as a user | `Ex04SearchAsUser` | coming soon |
-| 05 | Sign in through your identity provider | `Ex05PartnerIdpLogin` | coming soon |
-| 06 | Streaming chat | `Ex06StreamingChat` | coming soon |
-| 07 | Search as your service | `Ex07ServiceSearch` | coming soon |
-| W1–W3 | Workplace: source and field filters, retrieval then answer, multi-turn chat | `W1`–`W3` | coming soon |
-| P1–P14 | Project search: filters, facets, boosts, semantic and hybrid AI search, reranking and more | `P01`–`P14` | coming soon |
-
-See [examples/java](examples/java/README.md) for how to run them and what each one needs.
+1. **Admin UI.** An administrator creates the user, who receives a temporary password and sets
+   their own password at first sign-in. No code is needed (see
+   [Administrator setup](examples/java/README.md#administrator-setup-one-time-no-code)).
+2. **API integration** (`RegisterUsers`, `RegisterUsersWithWorkspaceAccess`). Your backend
+   registers users with its service key. Users are linked to your identity provider, so there are
+   no SmartSearch AI passwords.
 
 ## License
 
