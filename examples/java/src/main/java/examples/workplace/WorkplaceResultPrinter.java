@@ -12,13 +12,13 @@ import examples.ExampleRunner;
  * A generated answer adds {@code "answer"} (the text) and {@code "sources"} (the documents it
  * cites, same shape). The numbers in brackets in an answer, such as [1], refer to those sources.
  */
-final class WorkplaceResultPrinter {
+public final class WorkplaceResultPrinter {
 
     private WorkplaceResultPrinter() {
     }
 
     /** Prints the documents of a search or retrieval-only query. */
-    static void printDocuments(JsonNode body) {
+    public static void printDocuments(JsonNode body) {
         JsonNode docs = body.path("documents");
         System.out.println("documents=" + docs.size());
         int rank = 1;
@@ -28,7 +28,7 @@ final class WorkplaceResultPrinter {
     }
 
     /** Prints an answer and the sources it cites. */
-    static void printAnswer(JsonNode body) {
+    public static void printAnswer(JsonNode body) {
         System.out.println("answer: " + ExampleRunner.shorten(body.path("answer").asText(), 300));
         JsonNode sources = body.path("sources");
         System.out.println("sources=" + sources.size());

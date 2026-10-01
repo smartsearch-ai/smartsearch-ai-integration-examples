@@ -178,7 +178,8 @@ answering agent in it. Which call to use:
 | 40 | `RegisterUsers` | Register users from your system, linked to your identity provider | Provisioning integration | `./run.sh RegisterUsers` |
 | 41 | `RegisterUsersWithWorkspaceAccess` | Register a user and give workspace and source access | As 40, allowed to grant the workspace and source | `./run.sh RegisterUsersWithWorkspaceAccess` |
 | 42 | `SearchWorkplaceAsUser` | Act as a user from the user's own access token, and search | "Act as users" with token exchange; `SMARTSEARCH_USER_ACCESS_TOKEN` | `./run.sh SearchWorkplaceAsUser` |
-| 43 | `SignInWithYourIdentityProvider` | Act as a user who signed in to your identity provider; search and ask a question as them | Registered identity provider; "Act as users" with JWT grant; `SMARTSEARCH_USER_ASSERTION` | `./run.sh SignInWithYourIdentityProvider` |
+| 43 | `CreateUserAssertion` | Build and sign the user assertion your backend creates (JWT, RS256), and the public key set (JWKS) to publish; optionally sign in with it | Your signing key; for `--sign-in`, issuer and JWKS URL registered by an Owner | `./run.sh CreateUserAssertion sdk-example-user-1` |
+| 44 | `SignInWithYourIdentityProvider` | Act as a user who signed in to your identity provider; search and ask a question as them | Registered identity provider; "Act as users" with JWT grant; `SMARTSEARCH_USER_ASSERTION` | `./run.sh SignInWithYourIdentityProvider` |
 
 ## Administrator setup (one time, no code)
 
@@ -188,11 +189,13 @@ administrator login or token.
 1. **Create a service key** for your integration, assign it the projects and workspaces it may
    use, and give it the permissions it needs (for example query read and workspace read, plus
    provisioning for steps 40-41).
-2. **Register your identity provider** (needed for step 43): account menu
-   **⋮ → Identity providers**.
-3. **Let the key act as users** (needed for steps 42-43): **Edit service account → Act as
+2. **Register your identity provider** (needed for steps 43-44): account menu
+   **⋮ → Identity providers**. The Owner enters your issuer (for example
+   `https://login.your-company.example.com`) and the URL where you publish your public keys (for
+   example `https://login.your-company.example.com/.well-known/jwks.json`); see step 43.
+3. **Let the key act as users** (needed for steps 42-44): **Edit service account → Act as
    users**. This sets which identity providers are trusted, which operations the key may perform
-   as a user (search, query, chat) and on which workspaces and sources. Step 43 uses the JWT
+   as a user (search, query, chat) and on which workspaces and sources. Steps 43-44 use the JWT
    authorization grant; step 42 also needs token exchange enabled for the key.
 4. **Provisioning integration** (needed for steps 40-41): your SmartSearch AI contact sets up the
    integration that lets your key register users and grant workspace access, and gives you its
@@ -219,7 +222,7 @@ at all.
 - **Facets need a project without document security** (step 21).
 - **Memory belongs to an identity.** Every request made with one service key shares one memory.
   When answering for many people as your service, send `MemoryMode.STANDARD`; to give each person
-  their own memory, act as them (steps 42, 43). Set `memoryMode` explicitly on every Workplace request: the
+  their own memory, act as them (steps 42, 44). Set `memoryMode` explicitly on every Workplace request: the
   server default can store memory (step 36).
 - **User tokens are short-lived and not renewed.** `UserWorkplace.expiresAt()` tells you when to
   get a new one. Assertions from your identity provider are single-use.

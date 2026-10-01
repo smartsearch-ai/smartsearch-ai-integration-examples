@@ -137,6 +137,14 @@ answer engine for company knowledge in workspaces, with three calls:
 - **chat**: like query, in a conversation where follow-ups build on earlier turns
   (`ChatWithFollowUpQuestions`, `StreamChatAnswer`).
 
+## Acting as your users
+
+Searching, querying or chatting as a user applies that user's access rules. Register the user
+with your own user ID (`RegisterUsers`); then, for each request, your backend signs a short-lived
+assertion "this is user <your user ID>" (`CreateUserAssertion`) and exchanges it, with your service
+key, for a token that acts as that user (`SignInWithYourIdentityProvider`). A service key alone
+can never act as a user.
+
 ## Example map
 
 | Capability | Example |

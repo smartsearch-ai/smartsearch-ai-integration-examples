@@ -49,7 +49,8 @@ In short:
 3. **Workplace as your service**: search (a results list), query (one question, one answer with
    its sources, or the sources only; streamed or not; with or without memory), and chat (a
    conversation with follow-up questions).
-4. **Your users**: register users, give them access, and search as them.
+4. **Your users**: register users, give them access, create the signed assertion that proves
+   which user your backend acts for, and search as them.
 
 ## Two ways to create users
 

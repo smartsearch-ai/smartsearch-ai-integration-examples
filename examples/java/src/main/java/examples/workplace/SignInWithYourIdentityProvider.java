@@ -16,8 +16,9 @@ import examples.ExampleRunner;
  * <ol>
  *   <li>Once: register the users ({@code RegisterUsers}), linking each one to their account in
  *       your identity provider, and give them access ({@code RegisterUsersWithWorkspaceAccess}).</li>
- *   <li>Each sign-in: your identity provider issues a signed token (an <i>assertion</i>) that says
- *       who the user is.</li>
+ *   <li>Each sign-in: your identity provider, or your backend, issues a signed token (an
+ *       <i>assertion</i>) that says who the user is. {@code CreateUserAssertion} shows how to
+ *       build and sign one, and the public key set to publish.</li>
  *   <li>Your backend passes that assertion to {@code asUser(...)}. The identity server checks it
  *       against your registered identity provider and returns a token that acts as the linked
  *       SmartSearch AI user on behalf of your service.</li>
