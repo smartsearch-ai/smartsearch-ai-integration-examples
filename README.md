@@ -4,7 +4,7 @@ Runnable examples that show how to integrate with **SmartSearch AI** from Java a
 are written for developers who have never used SmartSearch AI: follow the learning path step by
 step, and read each example's comments alongside its output.
 
-> **Status:** preview. Java examples are available; Python examples will follow the Python SDK.
+> **Status:** preview. Java and Python examples are available, following the same learning path.
 
 ## What you can do
 
@@ -20,7 +20,7 @@ step, and read each example's comments alongside its output.
 | | Java | Python |
 |---|---|---|
 | Runtime | Java 21+ | Python 3.10+ |
-| SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` (coming soon) |
+| SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` ([setup](examples/python/README.md#setup)) |
 
 ## What your administrator gives you
 
@@ -39,7 +39,8 @@ application.**
 
 ## Learning path
 
-The [Java README](examples/java/README.md#learning-path) lists every step with its run command.
+The [Java README](examples/java/README.md#learning-path) and the
+[Python README](examples/python/README.md#learning-path) list every step with its run command.
 In short:
 
 1. **Getting started**: connect with your service key (`ConnectAndCheckAccess`).
