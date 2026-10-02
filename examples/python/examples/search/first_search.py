@@ -16,46 +16,64 @@ examples use the Movies sample data set (fields ``title``, ``overview``, ``tagli
 Run: ./run.sh first_search "star wars"
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, hits_of, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    with connect() as ss:
-        # Build the request. q is what the user typed; response_fields names the fields each hit
-        # should carry (name each one: wildcards are rejected); size is how many hits to return
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    with _common.connect() as ss:
+        # Build the request. q is what the user typed; response_fields names the
+        # fields each hit
+        # should carry (name each one: wildcards are rejected); size is how many
+        # hits to return
         # (default 10).
-        query = SearchQuery(
-            query_text(args, "star wars"),
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "star wars"),
             response_fields=["title", "release_date", "vote_average"],
             size=5,
         )
-        # to_json() shows the exact body the SDK will send. Useful while learning and in logs.
+        # to_json() shows the exact body the SDK will send. Useful while
+        # learning and in logs.
         print("request: " + query.to_json())
 
         # POST {api_url}/core/projects/{project_id}/search
-        # Authenticates with the service key's token. Raises SmartSearchError when the server
-        # refuses the request (for example HTTP 404 for an unknown project ID) or when no response
+        # Authenticates with the service key's token. Raises SmartSearchError
+        # when the server
+        # refuses the request (for example HTTP 404 for an unknown project ID)
+        # or when no response
         # arrives (status_code == 0). See handle_errors_and_warnings.
-        result = ss.search().search(project_id(), query)
+        result = ss.search().search(_common.project_id(), query)
 
+        _common.require_success(result)
         # Envelope fields on every response:
         #   code                   1 = success
         #   message                short status text, "Success" on success
-        #   search_id              identifies this search; quote it when reporting a problem
+        # search_id              identifies this search; quote it when reporting
+        # a problem
         #   effective_neural_mode  the search technique the server actually ran
-        #   warning                set when the server changed something you asked for
-        print(f"code={result.code} message={result.message}"
-              f" searchId={'present' if result.search_id is not None else 'none'}"
-              f" mode={result.effective_neural_mode} warning={result.warning}")
+        # warning                set when the server changed something you asked
+        # for
+        print(
+            f"code={result.code} message={result.message}"
+            f" searchId={'present' if result.search_id is not None else 'none'}"
+            f" mode={result.effective_neural_mode} warning={result.warning}"
+        )
 
-        # result.result holds the hits (see _common.py for the shape). Each hit's _source carries
+        # result.result holds the hits (see _common.py for the shape). Each
+        # hit's _source carries
         # only the response_fields you asked for.
-        for hit in hits_of(result):
+        for hit in _common.hits_of(result):
             doc = hit.get("_source", {})
-            print(f"  {doc.get('title')} ({doc.get('release_date')}, rated {doc.get('vote_average')})")
+            print(
+                f"  {doc.get('title')} ({doc.get('release_date')}, rated {doc.get('vote_average')})"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

@@ -12,27 +12,53 @@ keyword ranking and ``rerank=False``, as here.
 Precondition: as ``first_search``. Run: ./run.sh boost_term_values love
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery, TermBoost
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 FIELDS = ["title", "original_language"]
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "love")
-    with connect() as ss:
-        # A SearchQuery is immutable, so keep the shared options in a dict and build a new
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "love")
+    with _common.connect() as ss:
+        # A SearchQuery is immutable, so keep the shared options in a dict and
+        # build a new
         # query for each variant.
-        base = dict(response_fields=FIELDS, size=5, neural_mode=NeuralMode.BM25,
-                    rerank=False)                                          # keep the boosted order
+        base = dict(
+            response_fields=FIELDS,
+            size=5,
+            neural_mode=smartsearch_ai.NeuralMode.BM25,
+            rerank=False,
+        )  # keep the boosted order
         print("Without a boost:")
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), SearchQuery(q, **base)), *FIELDS)
+        _common.print_hits(
+            ss.search().search(
+                _common.project_id(), smartsearch_ai.SearchQuery(q, **base)
+            ),
+            *FIELDS
+        )
         print("Boost original_language = fr, weight 5:")
-        print_hits(ss.search().search(project_id(), SearchQuery(
-            q, **base, boosts=[TermBoost("original_language", "fr", 5)])), *FIELDS)
+        _common.print_hits(
+            ss.search().search(
+                _common.project_id(),
+                smartsearch_ai.SearchQuery(
+                    q,
+                    **base,
+                    boosts=[
+                        smartsearch_ai.TermBoost("original_language", "fr", 5)
+                    ]
+                ),
+            ),
+            *FIELDS
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

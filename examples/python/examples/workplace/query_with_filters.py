@@ -16,34 +16,50 @@ Run: ./run.sh query_with_filters "What is a normal blood pressure?" pressure
 (question, then a word the titles must contain).
 """
 
-from smartsearch_ai import MemoryMode, Mode, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, require, run, shorten, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
     question = args[0] if len(args) > 0 else "What is our travel policy?"
     title_word = args[1] if len(args) > 1 else "policy"
-    source_id = require("SMARTSEARCH_SOURCE_ID")
-    with connect() as ss:
-        request = WorkspaceQueryRequest(
+    source_id = _common.require("SMARTSEARCH_SOURCE_ID")
+    with _common.connect() as ss:
+        request = smartsearch_ai.WorkspaceQueryRequest(
             query=question,
-            mode=Mode.ANSWER,
-            memory_mode=MemoryMode.STANDARD,
-            source_ids=[source_id],                                                # only this source
-            filters={"all": [                                                      # every clause must match
-                {"search_type": "match", "field": "title", "value": title_word}]},
+            mode=smartsearch_ai.Mode.ANSWER,
+            memory_mode=smartsearch_ai.MemoryMode.STANDARD,
+            source_ids=[source_id],  # only this source
+            filters={
+                "all": [  # every clause must match
+                    {
+                        "search_type": "match",
+                        "field": "title",
+                        "value": title_word,
+                    }
+                ]
+            },
         )
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query   (with source_ids and filters)
-        # Errors: ValueError before sending for an unsupported clause or field; SmartSearchError
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query   (with
+        # source_ids and filters)
+        # Errors: ValueError before sending for an unsupported clause or field;
+        # SmartSearchError
         # when the server refuses.
-        body = ss.workplace().query(workspace_id(), request).body
-        print("answer: " + shorten(body.get("answer"), 250))
+        body = ss.workplace().query(_common.workspace_id(), request).body
+        print("answer: " + _common.shorten(body.get("answer"), 250))
         print(f"sources={len(body.get('sources', []))}")
         for source in body.get("sources", []):
-            print(f"  [{source.get('n')}] {shorten(source.get('title'), 70)}"
-                  f" (from the chosen source: {str(source.get('source_id') == source_id).lower()})")
+            print(
+                f"  [{source.get('n')}] {_common.shorten(source.get('title'), 70)}"
+                f" (from the chosen source: {str(source.get('source_id') == source_id).lower()})"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

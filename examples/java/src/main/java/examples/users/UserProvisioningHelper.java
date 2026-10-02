@@ -5,7 +5,6 @@ import co.smartsearchai.provisioning.ProvisioningModels.Scope;
 import co.smartsearchai.provisioning.ProvisioningModels.ScopeKind;
 import com.fasterxml.jackson.databind.JsonNode;
 import examples.SmartSearchConnectionConfig;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
@@ -19,34 +18,55 @@ import java.util.Set;
 final class UserProvisioningHelper {
 
     /** States after which a job no longer changes. */
-    private static final Set<String> FINISHED =
-            Set.of("SUCCEEDED", "PARTIAL", "FAILED", "RECONCILIATION_REQUIRED", "CANCELLED");
+    private static final Set<String> FINISHED = Set.of(
+        "SUCCEEDED",
+        "PARTIAL",
+        "FAILED",
+        "RECONCILIATION_REQUIRED",
+        "CANCELLED"
+    );
 
-    private UserProvisioningHelper() {
-    }
+    private UserProvisioningHelper() {}
 
     /**
      * The tenant your integration registers users into. A <i>tenant</i> is your organisation's
      * account in SmartSearch AI; your administrator gives you its ID (SMARTSEARCH_TENANT_ID).
      */
     static Scope tenantScope() {
-        return new Scope(ScopeKind.TENANT, SmartSearchConnectionConfig.require("SMARTSEARCH_TENANT_ID"));
+        return new Scope(
+            ScopeKind.TENANT,
+            SmartSearchConnectionConfig.require("SMARTSEARCH_TENANT_ID")
+        );
     }
 
     /**
      * Polls a job once a second until it finishes; throws if the timeout passes.
      * GET {adminUrl}/search-admin/api/provisioning/v1/jobs/{jobId}
      */
-    static JsonNode waitForJob(ProvisioningClient users, String jobId, Duration timeout) throws InterruptedException {
+    static JsonNode waitForJob(
+        ProvisioningClient users,
+        String jobId,
+        Duration timeout
+    ) throws InterruptedException {
         Instant deadline = Instant.now().plus(timeout);
         JsonNode job = users.getJob(jobId).getBody();
-        while (!FINISHED.contains(job.path("state").asText()) && Instant.now().isBefore(deadline)) {
+        while (
+            !FINISHED.contains(job.path("state").asText()) &&
+            Instant.now().isBefore(deadline)
+        ) {
             Thread.sleep(1_000);
             job = users.getJob(jobId).getBody();
         }
         if (!FINISHED.contains(job.path("state").asText())) {
-            throw new IllegalStateException("Provisioning job " + jobId + " still " + job.path("state").asText()
-                    + " after " + timeout.toSeconds() + "s; poll this job again");
+            throw new IllegalStateException(
+                "Provisioning job " +
+                    jobId +
+                    " still " +
+                    job.path("state").asText() +
+                    " after " +
+                    timeout.toSeconds() +
+                    "s; poll this job again"
+            );
         }
         return job;
     }
@@ -58,9 +78,18 @@ final class UserProvisioningHelper {
     static void printItems(ProvisioningClient users, String jobId) {
         JsonNode page = users.listJobItems(jobId, null, 100, null).getBody();
         for (JsonNode item : page.path("values")) {
-            System.out.println("  item " + item.path("item_key").asText() + ": " + item.path("state").asText()
-                    + (item.hasNonNull("principal_id") ? " principal=" + item.path("principal_id").asText() : "")
-                    + (item.hasNonNull("error_code") ? " error=" + item.path("error_code").asText() : ""));
+            System.out.println(
+                "  item " +
+                    item.path("item_key").asText() +
+                    ": " +
+                    item.path("state").asText() +
+                    (item.hasNonNull("principal_id")
+                        ? " principal=" + item.path("principal_id").asText()
+                        : "") +
+                    (item.hasNonNull("error_code")
+                        ? " error=" + item.path("error_code").asText()
+                        : "")
+            );
         }
     }
 }

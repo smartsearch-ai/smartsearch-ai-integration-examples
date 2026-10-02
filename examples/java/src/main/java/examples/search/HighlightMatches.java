@@ -3,9 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.SearchQuery;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
-
+import examples.SmartSearchConnectionConfig;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -22,28 +21,59 @@ import java.util.Set;
  * checking that {@code <em>} is the only markup, or replace the tags with your own styling.
  *
  * <p>Precondition: as {@code FirstSearch}. Run: {@code ./run.sh HighlightMatches princess}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class HighlightMatches {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 SearchQuery query = SearchQuery.builder()
-                        .q(ExampleRunner.queryText(args, "princess"))
-                        .responseFields("title")
-                        .highlight(true)                    // add matching fragments to each hit
-                        .size(3)
-                        .build();
+                    .q(ExampleRunner.queryText(args, "princess"))
+                    .responseFields("title")
+                    .highlight(true) // add matching fragments to each hit
+                    .size(3)
+                    .build();
                 // POST {apiUrl}/core/projects/{projectId}/search
-                JsonNode hits = ss.search().search(SmartSearchConnectionConfig.projectId(), query).result().path("hits").path("hits");
+                JsonNode hits = SearchResultPrinter.requireSuccess(
+                    ss
+                        .search()
+                        .search(SmartSearchConnectionConfig.projectId(), query)
+                )
+                    .result()
+                    .path("hits")
+                    .path("hits");
                 for (JsonNode hit : hits) {
-                    System.out.println("- " + hit.path("_source").path("title").asText());
+                    System.out.println(
+                        "- " + hit.path("_source").path("title").asText()
+                    );
                     // highlight = { "<field key>": ["fragment with <em>word</em>", ...], ... }
                     Set<String> fragments = new LinkedHashSet<>();
-                    hit.path("highlight").forEach(field -> field.forEach(fragment -> {
-                        if (fragment.asText().contains("<em>")) fragments.add(ExampleRunner.shorten(fragment.asText(), 120));
-                    }));
-                    fragments.stream().limit(3).forEach(f -> System.out.println("    " + f));
+                    hit
+                        .path("highlight")
+                        .forEach(field ->
+                            field.forEach(fragment -> {
+                                if (fragment.asText().contains("<em>")) {
+                                    fragments.add(
+                                        ExampleRunner.shorten(
+                                            fragment.asText(),
+                                            120
+                                        )
+                                    );
+                                }
+                            })
+                        );
+                    fragments
+                        .stream()
+                        .limit(3)
+                        .forEach(f -> System.out.println("    " + f));
                 }
             }
         });

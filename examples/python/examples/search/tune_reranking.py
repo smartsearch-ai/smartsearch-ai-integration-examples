@@ -9,37 +9,46 @@ data, so pick the threshold by testing on real queries.
 Precondition: as ``rerank_results``. Run: ./run.sh tune_reranking "wizard school"
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "wizard school")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "wizard school")
+    with _common.connect() as ss:
         for first_stage in (10, 50):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 q,
                 rerank=True,
-                rerank_first_stage_size=first_stage,    # candidates the model re-scores
+                rerank_first_stage_size=first_stage,  # candidates the model re-scores
                 response_fields=["title"],
                 size=5,
             )
             print(f"rerankFirstStageSize={first_stage}:")
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
-        with_minimum = SearchQuery(
+        with_minimum = smartsearch_ai.SearchQuery(
             q,
             rerank=True,
             rerank_first_stage_size=30,
-            rerank_min_score=0.5,                       # drop hits the model scores below 0.5
+            rerank_min_score=0.5,  # drop hits the model scores below 0.5
             response_fields=["title"],
             size=10,
         )
         print("rerankMinScore=0.5, size=10:")
-        print_hits(ss.search().search(project_id(), with_minimum), "title")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), with_minimum), "title"
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

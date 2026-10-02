@@ -3,8 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.NeuralMode;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Searched fields versus returned fields: two different lists.
@@ -19,24 +19,42 @@ import examples.ExampleRunner;
  * {@code KeywordVsSemanticVsHybrid}).
  *
  * <p>Precondition: as {@code FirstSearch}. Run: {@code ./run.sh ChooseSearchedAndReturnedFields galaxy}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class ChooseSearchedAndReturnedFields {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String q = ExampleRunner.queryText(args, "galaxy");
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                for (String searched : new String[]{"title", "overview"}) {
+                for (String searched : new String[] { "title", "overview" }) {
                     SearchQuery query = SearchQuery.builder()
-                            .q(q)
-                            .fields(searched)                 // search only this field (replaces earlier fields(...))
-                            .responseFields("title")          // but return only the title
-                            .neuralMode(NeuralMode.BM25)
-                            .size(3)
-                            .build();
-                    System.out.println("q=\"" + q + "\" searched in " + searched + ":");
+                        .q(q)
+                        .fields(searched) // search only this field (replaces earlier fields(...))
+                        .responseFields("title") // but return only the title
+                        .neuralMode(NeuralMode.BM25)
+                        .size(3)
+                        .build();
+                    System.out.println(
+                        "q=\"" + q + "\" searched in " + searched + ":"
+                    );
                     // POST {apiUrl}/core/projects/{projectId}/search
-                    SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), query), "title");
+                    SearchResultPrinter.printHits(
+                        ss
+                            .search()
+                            .search(
+                                SmartSearchConnectionConfig.projectId(),
+                                query
+                            ),
+                        "title"
+                    );
                 }
             }
         });

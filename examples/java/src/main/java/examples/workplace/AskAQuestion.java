@@ -42,38 +42,81 @@ import examples.SmartSearchConnectionConfig;
  * <p><b>Precondition.</b> Your service key is a member of SMARTSEARCH_WORKSPACE_ID, which has an
  * answering agent. Answers take seconds; the SDK's default read timeout is 60 seconds.
  * Run: {@code ./run.sh AskAQuestion "What is a normal blood pressure?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class AskAQuestion {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String question = ExampleRunner.queryText(args, "What is our travel policy?");
+            String question = ExampleRunner.queryText(
+                args,
+                "What is our travel policy?"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(question)
-                        .mode(Mode.ANSWER)                          // write an answer
-                        .memoryMode(MemoryMode.STANDARD)            // no long-term memory
-                        .options(Options.builder()
-                                .includeSources(true)               // return the documents used
-                                .maxContextDocuments(5))            // the agent reads at most 5
-                        .build();
+                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(
+                    question
+                )
+                    .mode(Mode.ANSWER) // write an answer
+                    .memoryMode(MemoryMode.STANDARD) // no long-term memory
+                    .options(
+                        Options.builder()
+                            .includeSources(true) // return the documents used
+                            .maxContextDocuments(5)
+                    ) // the agent reads at most 5
+                    .build();
 
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query
                 // Errors: WorkspaceClientException (HTTP status + server error code), for example when
                 // the key is not a member or the workspace has no answering agent; a timeout when
                 // the answer takes longer than the read timeout.
                 long start = System.nanoTime();
-                WorkspaceResult result = ss.workplace().query(SmartSearchConnectionConfig.workspaceId(), request);
+                WorkspaceResult result = ss
+                    .workplace()
+                    .query(SmartSearchConnectionConfig.workspaceId(), request);
                 JsonNode body = result.getBody();
 
-                System.out.println("HTTP " + result.getStatusCode() + " in " + (System.nanoTime() - start) / 1_000_000 + " ms"
-                        + ", run_id=" + (body.hasNonNull("run_id") ? "present" : "none")
-                        + ", mode=" + body.path("mode").asText() + ", status=" + body.path("status").asText());
-                System.out.println("answer: " + ExampleRunner.shorten(body.path("answer").asText(), 300));
+                System.out.println(
+                    "HTTP " +
+                        result.getStatusCode() +
+                        " in " +
+                        (System.nanoTime() - start) / 1_000_000 +
+                        " ms" +
+                        ", run_id=" +
+                        (body.hasNonNull("run_id") ? "present" : "none") +
+                        ", mode=" +
+                        body.path("mode").asText() +
+                        ", status=" +
+                        body.path("status").asText()
+                );
+                System.out.println(
+                    "answer: " +
+                        ExampleRunner.shorten(body.path("answer").asText(), 300)
+                );
 
                 // Show sources by their number n, so [1], [2] in the answer can be matched to them.
-                System.out.println("sources=" + body.path("sources").size() + " citations=" + body.path("citations").size());
+                System.out.println(
+                    "sources=" +
+                        body.path("sources").size() +
+                        " citations=" +
+                        body.path("citations").size()
+                );
                 for (JsonNode source : body.path("sources")) {
-                    System.out.println("  [" + source.path("n").asText() + "] " + ExampleRunner.shorten(source.path("title").asText(), 80));
+                    System.out.println(
+                        "  [" +
+                            source.path("n").asText() +
+                            "] " +
+                            ExampleRunner.shorten(
+                                source.path("title").asText(),
+                                80
+                            )
+                    );
                 }
                 System.out.println("memory=" + body.path("memory"));
             }

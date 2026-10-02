@@ -2,8 +2,8 @@ package examples.search;
 
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Reranking on, off, and the project default.
@@ -22,23 +22,47 @@ import examples.ExampleRunner;
  *
  * <p>Precondition: as {@code FirstSearch}, on a project with a reranker set up.
  * Run: {@code ./run.sh RerankResults "wizard school"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class RerankResults {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String q = ExampleRunner.queryText(args, "wizard school");
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                for (Boolean rerank : new Boolean[]{Boolean.TRUE, Boolean.FALSE, null}) {
+                for (Boolean rerank : new Boolean[] {
+                    Boolean.TRUE,
+                    Boolean.FALSE,
+                    null,
+                }) {
                     SearchQuery query = SearchQuery.builder()
-                            .q(q)
-                            .rerank(rerank)                     // true / false / null = project default
-                            .responseFields("title")
-                            .size(5)
-                            .build();
-                    System.out.println("rerank=" + (rerank == null ? "project default" : rerank) + ":");
+                        .q(q)
+                        .rerank(rerank) // true / false / null = project default
+                        .responseFields("title")
+                        .size(5)
+                        .build();
+                    System.out.println(
+                        "rerank=" +
+                            (rerank == null ? "project default" : rerank) +
+                            ":"
+                    );
                     // POST {apiUrl}/core/projects/{projectId}/search
-                    SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), query), "title");
+                    SearchResultPrinter.printHits(
+                        ss
+                            .search()
+                            .search(
+                                SmartSearchConnectionConfig.projectId(),
+                                query
+                            ),
+                        "title"
+                    );
                 }
             }
         });

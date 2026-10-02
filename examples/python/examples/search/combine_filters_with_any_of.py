@@ -10,31 +10,50 @@ tagline) AND NOT rumored. The three parts map to the three parts of SSPL filters
 Precondition: as ``first_search``. Run: ./run.sh combine_filters_with_any_of space
 """
 
-from smartsearch_ai import AnyOf, Filter, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 FIELDS = ["title", "original_language", "vote_average", "genres"]
 
 
 def main(args: list[str]) -> None:
-    with connect() as ss:
-        query = SearchQuery(
-            query_text(args, "space"),
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    with _common.connect() as ss:
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "space"),
             response_fields=FIELDS,
             filters=[
-                Filter.term("original_language", "en"),                    # AND English
-                Filter.range("vote_average", gte=7.0),                     # AND rated >= 7
-                AnyOf(Filter.terms("genres.name", "Science Fiction", "Adventure"),
-                      Filter.exists("tagline")),                           # AND (genre OR tagline)
+                smartsearch_ai.Filter.term(
+                    "original_language", "en"
+                ),  # AND English
+                smartsearch_ai.Filter.range(
+                    "vote_average", gte=7.0
+                ),  # AND rated >= 7
+                smartsearch_ai.AnyOf(
+                    smartsearch_ai.Filter.terms(
+                        "genres.name", "Science Fiction", "Adventure"
+                    ),
+                    smartsearch_ai.Filter.exists("tagline"),
+                ),  # AND (genre OR tagline)
             ],
-            exclude=[Filter.term("status", "Rumored")],                    # AND NOT rumored
+            exclude=[
+                smartsearch_ai.Filter.term("status", "Rumored")
+            ],  # AND NOT rumored
             size=5,
         )
-        print("request: " + query.to_json())   # see how the three parts are written
+        print(
+            "request: " + query.to_json()
+        )  # see how the three parts are written
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), query), *FIELDS)
+        _common.print_hits(
+            ss.search().search(_common.project_id(), query), *FIELDS
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

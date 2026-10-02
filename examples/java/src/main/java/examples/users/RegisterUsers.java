@@ -8,9 +8,8 @@ import co.smartsearchai.provisioning.ProvisioningModels.JobKind;
 import co.smartsearchai.provisioning.ProvisioningModels.Profile;
 import co.smartsearchai.provisioning.ProvisioningModels.SubmitJob;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
-
+import examples.SmartSearchConnectionConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -36,45 +35,86 @@ import java.util.Set;
  * integration for your key the server answers HTTP 404 INTEGRATION_NOT_FOUND.
  *
  * <p>Run: {@code ./run.sh RegisterUsers}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect per-user job states; inspect PARTIAL/FAILED items.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class RegisterUsers {
 
     // Stable key: rerunning the example returns the same job instead of registering again.
     private static final String IDEMPOTENCY_KEY = "sdk-example-upsert-users-v1";
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            List<EnsureItem> users = List.of(user(1, "Ada", "Example"), user(2, "Grace", "Example"));
+            List<EnsureItem> users = List.of(
+                user(1, "Ada", "Example"),
+                user(2, "Grace", "Example")
+            );
 
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 ProvisioningClient provisioning = ss.users();
 
                 // What to do: UPSERT_USERS = create each user, or update them if they already exist.
                 // tenantScope() = where; integrationId = under which policy; users = who.
-                SubmitJob job = new SubmitJob(UserProvisioningHelper.tenantScope(), SmartSearchConnectionConfig.integrationId(), JobKind.UPSERT_USERS, users);
+                SubmitJob job = new SubmitJob(
+                    UserProvisioningHelper.tenantScope(),
+                    SmartSearchConnectionConfig.integrationId(),
+                    JobKind.UPSERT_USERS,
+                    users
+                );
 
                 // 1. Submit. POST {adminUrl}/search-admin/api/provisioning/v1/jobs  (Idempotency-Key header)
                 //    Returns at once (HTTP 202) with the job ID and its first state; the work continues
                 //    on the server. Errors: ProvisioningClientException, for example 404
                 //    INTEGRATION_NOT_FOUND (no integration for this key) or a validation error code.
-                JsonNode submitted = provisioning.submitJob(job, IDEMPOTENCY_KEY).getBody();
+                JsonNode submitted = provisioning
+                    .submitJob(job, IDEMPOTENCY_KEY)
+                    .getBody();
                 String jobId = submitted.path("job_id").asText();
-                System.out.println("Submitted job " + jobId + " state=" + submitted.path("state").asText());
+                System.out.println(
+                    "Submitted job " +
+                        jobId +
+                        " state=" +
+                        submitted.path("state").asText()
+                );
 
                 // 2. Wait for the job, then show what happened to each user. A job can finish as
                 //    PARTIAL: some users registered, others refused; each item says why.
-                JsonNode done = UserProvisioningHelper.waitForJob(provisioning, jobId, Duration.ofSeconds(60));
-                System.out.println("Job finished: state=" + done.path("state").asText());
+                JsonNode done = UserProvisioningHelper.waitForJob(
+                    provisioning,
+                    jobId,
+                    Duration.ofSeconds(60)
+                );
+                System.out.println(
+                    "Job finished: state=" + done.path("state").asText()
+                );
                 UserProvisioningHelper.printItems(provisioning, jobId);
 
                 // 3. Map your user IDs to SmartSearch AI principal IDs (store them next to your users).
                 //    GET {adminUrl}/search-admin/api/provisioning/v1/integrations/{integrationId}/principals
                 //        ?scope_kind=TENANT&scope_id={tenantId}&limit=100
                 //    For more than 100 users, pass the next-page cursor as the third argument (after).
-                JsonNode principals = provisioning.listPrincipals(SmartSearchConnectionConfig.integrationId(), UserProvisioningHelper.tenantScope(), null, 100).getBody();
+                JsonNode principals = provisioning
+                    .listPrincipals(
+                        SmartSearchConnectionConfig.integrationId(),
+                        UserProvisioningHelper.tenantScope(),
+                        null,
+                        100
+                    )
+                    .getBody();
                 System.out.println("Principals known to this integration:");
                 for (JsonNode p : principals.path("values")) {
-                    System.out.println("  " + p.path("external_user_id").asText() + " -> " + p.path("principal_id").asText());
+                    System.out.println(
+                        "  " +
+                            p.path("external_user_id").asText() +
+                            " -> " +
+                            p.path("principal_id").asText()
+                    );
                 }
             }
         });
@@ -84,13 +124,19 @@ public final class RegisterUsers {
     static EnsureItem user(int n, String firstName, String lastName) {
         String externalId = "sdk-example-user-" + n;
         return new EnsureItem(
-                "user-" + n,                                    // item key: names this entry in the job's results
-                externalId,                                     // your stable, never-reused user ID
-                new Profile(externalId + "@example.com", firstName, lastName, firstName + " " + lastName),
-                                                                // profile data only: the email never links to an existing account
-                "GUEST",                                        // the platform role registered users get (the only one allowed)
-                Set.of(),                                       // no extra permissions
-                List.of(),                                      // no workspace access yet (see RegisterUsersWithWorkspaceAccess)
-                new ExternalIdentity(externalId, externalId));  // the user's subject and username in YOUR identity provider
+            "user-" + n, // item key: names this entry in the job's results
+            externalId, // your stable, never-reused user ID
+            new Profile(
+                externalId + "@example.com",
+                firstName,
+                lastName,
+                firstName + " " + lastName
+            ),
+            // profile data only: the email never links to an existing account
+            "GUEST", // the platform role registered users get (the only one allowed)
+            Set.of(), // no extra permissions
+            List.of(), // no workspace access yet (see RegisterUsersWithWorkspaceAccess)
+            new ExternalIdentity(externalId, externalId)
+        ); // the user's subject and username in YOUR identity provider
     }
 }

@@ -1,7 +1,20 @@
 # Java examples
 
-One Maven project. Each example is a single, self-contained class that teaches one thing and
-prints a short, readable result. The classes are grouped by topic under
+You have an application. Now you want to add a search box, answer questions about company
+documents, or give your users access to those documents. Start with the task you need:
+
+| Your first goal | Start here | What you should see |
+|---|---|---|
+| Search a regular project | `FirstSearch` (step 2) | A successful response and matching document fields |
+| Search company documents in a workspace | `SearchWorkplaceAsService` (step 31) | A document count and titles your service may read |
+| Register your application's users | `ConnectAndCheckAccess`, then `RegisterUsers` (steps 1, 40) | Provisioning capabilities, then a job with an outcome for each user |
+
+You do **not** need to register users to try a service-key search. Per-user access comes later.
+Step 1 checks the user-registration API; passing it does not prove access to a project or
+workspace. Use the matching search example to check that access.
+
+This is one Maven project. Each example is a single class that teaches one thing and prints a
+short result. The classes are grouped by topic under
 [`src/main/java/examples`](src/main/java/examples):
 
 | Package | What is in it |
@@ -17,6 +30,10 @@ printers) are example plumbing, not part of the SDK.
 Every example's source starts with a plain-English explanation of the idea, when to use it and
 what it needs, and every call to SmartSearch AI is commented with the request it sends, what the
 parameters mean, what comes back and what can go wrong. Read the code alongside the output.
+
+Use a simple learning loop: **predict → run → inspect → change one thing**. For example, before
+adding a language filter, predict which results will disappear. Then run the filtered search
+and compare. You learn more from that comparison than from running all 44 examples in a row.
 
 ## How SmartSearch AI fits together
 
@@ -42,9 +59,19 @@ parameters mean, what comes back and what can go wrong. Read the code alongside 
    mvn install:install-file -Dfile=smartsearch-ai-<version>.jar -DpomFile=smartsearch-ai-<version>.pom
    ```
 
+   Replace `<version>` with the version of the supplied files; it is a placeholder, not shell
+   syntax to paste literally. The version must match `smartsearch-ai.version` in `pom.xml`
+   (currently `0.1.0-SNAPSHOT`). The internal release number is not the public Maven version.
+   If you have not received the preview artifacts, obtain them before continuing; a failed
+   dependency download is not an authentication problem.
+
 3. **Settings.** Copy [`.env.example`](../../.env.example) to `.env` at the repository root and
    fill it in. Every URL, key and ID is read from environment variables
    ([`SmartSearchConnectionConfig.java`](src/main/java/examples/SmartSearchConnectionConfig.java)); nothing is hard-coded.
+
+   The connection helper reads all three base URLs, the realm, and the service-key ID/secret.
+   Then fill in the ID for the task you chose. Registration IDs are only needed for registration;
+   a source ID is only needed when an example filters or grants access to a particular source.
 
 ### What each setting is
 
@@ -86,23 +113,46 @@ The requests the examples send, relative to those URLs:
 
 ```bash
 cd examples/java
-./run.sh ConnectAndCheckAccess              # loads ../../.env, then runs the example
-./run.sh FirstSearch "star wars"            # most examples take an optional query
+./run.sh FirstSearch "star wars"            # an existing Movies project your key can search
+# Or, for an existing workspace:
+./run.sh SearchWorkplaceAsService "refund"  # use a word from YOUR documents
 ```
 
-`run.sh` finds the class in any package and runs it with Maven. Without it, export the
-variables yourself and run:
+`run.sh` finds the class in any package, compiles it with Maven, then launches Java. It
+preserves your shell arguments, including apostrophes and quoted phrases. Without it,
+export the variables yourself and run:
 
 ```bash
-mvn -q compile exec:java -Dexec.mainClass=examples.search.FirstSearch -Dexec.args="'star wars'"
+mvn -q compile dependency:build-classpath -Dmdep.outputFile=target/example-classpath.txt
+java -cp "target/classes:$(cat target/example-classpath.txt)" examples.search.FirstSearch "star wars"
 ```
 
 On failure an example prints one `ERROR` line with the HTTP status and the server's message, and
 exits with status 1. It never prints tokens or secrets.
 
+### Read your first result
+
+`FirstSearch` prints the request, a response summary, then document fields. A summary might look
+like this **illustrative** output; the actual mode, warning and documents depend on your project:
+
+```text
+code=1 message=Success searchId=present mode=BM25 warning=null
+```
+
+`code=1` is success. A **hit** is one returned document. No document lines can mean the request
+succeeded but found no matches; try a word you know exists before changing your credentials.
+HTTP 200 alone is not enough: a search envelope with `code=0` is still a failure. An `ERROR`
+line is a different outcome from zero hits: use the troubleshooting table below.
+
+Now change `.size(5)` to `.size(2)` in `FirstSearch.java`. Predict the effect, run it again, and
+count the returned documents. Then restore it and try `ChooseSearchedAndReturnedFields`.
+Keep the query fixed while changing one option so you can see what that option does.
+
 ## Learning path
 
-Work through the steps in order; each builds on the ones before. Every step is one class.
+Choose the part that matches your task, then work through its steps in order. Every step is one
+class. Project search and Workplace are separate paths; the user-registration path adds
+per-user identity when your application needs it.
 
 ### Part 1: Getting started
 
@@ -173,6 +223,12 @@ answering agent in it. Which call to use:
 
 ### Part 4: Your users
 
+These examples submit real registration jobs when pointed at a live environment. Use your
+administrator's test integration and the demo identities shown in the source. A submitted job
+is not a finished job: wait for its terminal state and inspect each item's outcome. `PARTIAL`
+means some items failed. Reuse the idempotency key only with the same request; changing the
+users or grants requires a new key. An idempotency key identifies one submission, not a login.
+
 | Step | Example | What you learn | Needs | Run |
 |---|---|---|---|---|
 | 40 | `RegisterUsers` | Register users from your system, linked to your identity provider | Provisioning integration | `./run.sh RegisterUsers` |
@@ -219,3 +275,45 @@ at all.
   get a new one. Assertions from your identity provider are single-use.
 - **Timeouts.** Answers and chat can take tens of seconds; the SDK's default read timeout is
   60 seconds (`SmartSearchAi.builder().readTimeout(...)`).
+
+## When the result surprises you
+
+| What you see | What to check next |
+|---|---|
+| Maven cannot resolve `smartsearch-ai` | Install the supplied public preview jar and pom; check the version in `pom.xml`. No API request has happened yet. |
+| A required environment variable is missing | Fill in that exact name in the root `.env`. IDs select resources; they are not credentials. |
+| Token acquisition fails | Check the auth base URL, realm and service key with your administrator. Never paste the secret or token into a bug report. |
+| HTTP 403 or `SCOPE_DENIED` | Confirm the key/user is allowed to use that resource and operation, and that the resource is active. Registration permission alone does not grant search access. |
+| A successful search returns no hits | Try a known word from an accessible document; check the project/workspace ID and any filters. The Movies examples require the Movies schema. |
+| A requested search mode changes | Read `effectiveNeuralMode()` and `warning()`; check the project's configured features before tuning more parameters. |
+| A registration job times out | Keep its job ID and check that same job again. A timeout does not mean the server cancelled it. |
+| A job finishes as `PARTIAL` or `FAILED` | Read the item outcomes and error codes. Do not treat a terminal state as proof every user was registered. |
+
+When asking for help, include the example name, HTTP status/error code and search or job ID.
+Keep credentials and private document content out of the report.
+
+## Check changes locally
+
+After installing the SDK preview, run these from `examples/java`. The Python checks use only
+the standard library and synthetic credentials; HTTP fixtures listen on loopback.
+
+```bash
+python3 tests/test_runner.py
+mvn -q compile dependency:build-classpath -Dmdep.outputFile=target/example-classpath.txt
+python3 tests/test_public_examples.py
+javac -cp "target/classes:$(cat target/example-classpath.txt)" -d target/test-classes tests/OfflineChecks.java
+java -cp "target/test-classes:target/classes:$(cat target/example-classpath.txt)" examples.search.OfflineChecks
+```
+
+These cover argument preservation, failed search envelopes and final streamed answers.
+
+## Writing another example
+
+Follow the [Cornell Java style guide](https://www.cs.cornell.edu/courses/JavaAndDS/JavaStyle.html#Indentation)
+and this repository's `.editorconfig`: four-space Java indentation, consistent braces, and
+readable lines. Describe a method's purpose and contract in Javadoc. Use inline comments to
+explain decisions or meaningful groups of statements, rather than narrating each Java keyword.
+
+Teach one decision per example. Give the reader a problem, prerequisites, a run command,
+something specific to check in the result, and one small change to try. Keep helper mechanics
+separate from the API concept, and use only the curated public integration surface.

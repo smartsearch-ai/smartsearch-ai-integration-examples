@@ -25,28 +25,57 @@ import examples.SmartSearchConnectionConfig;
  *
  * <p><b>Precondition.</b> Your service key is a member of SMARTSEARCH_WORKSPACE_ID.
  * Run: {@code ./run.sh RetrieveSourcesOnly "What is a normal blood pressure?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class RetrieveSourcesOnly {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String question = ExampleRunner.queryText(args, "What is our travel policy?");
+            String question = ExampleRunner.queryText(
+                args,
+                "What is our travel policy?"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(question)
-                        .mode(Mode.RETRIEVAL_ONLY)                  // sources only, no model call
-                        .memoryMode(MemoryMode.STANDARD)            // set explicitly: the default may record memory
-                        .build();
+                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(
+                    question
+                )
+                    .mode(Mode.RETRIEVAL_ONLY) // sources only, no model call
+                    .memoryMode(MemoryMode.STANDARD) // set explicitly: the default may record memory
+                    .build();
 
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query   (mode = retrieval_only)
                 // Errors: WorkspaceClientException (HTTP status + server error code).
-                JsonNode body = ss.workplace().query(SmartSearchConnectionConfig.workspaceId(), request).getBody();
+                JsonNode body = ss
+                    .workplace()
+                    .query(SmartSearchConnectionConfig.workspaceId(), request)
+                    .getBody();
 
-                System.out.println("mode=" + body.path("mode").asText() + " status=" + body.path("status").asText()
-                        + " answer=" + (body.hasNonNull("answer") ? "present" : "none"));
+                System.out.println(
+                    "mode=" +
+                        body.path("mode").asText() +
+                        " status=" +
+                        body.path("status").asText() +
+                        " answer=" +
+                        (body.hasNonNull("answer") ? "present" : "none")
+                );
                 System.out.println("sources=" + body.path("sources").size());
                 for (JsonNode source : body.path("sources")) {
-                    System.out.printf("  [%s] %-60s score=%.4f%n", source.path("n").asText(),
-                            ExampleRunner.shorten(source.path("title").asText(), 60), source.path("score").asDouble());
+                    System.out.printf(
+                        "  [%s] %-60s score=%.4f%n",
+                        source.path("n").asText(),
+                        ExampleRunner.shorten(
+                            source.path("title").asText(),
+                            60
+                        ),
+                        source.path("score").asDouble()
+                    );
                     // snippet (the matching text) and source_url (where to open it) are also here.
                 }
             }

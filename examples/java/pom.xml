@@ -30,7 +30,7 @@
                 <version>3.13.0</version>
             </plugin>
             <plugin>
-                <!-- mvn -q compile exec:java -Dexec.mainClass=examples.Ex01ServiceConnect -->
+                <!-- mvn -q compile exec:java -Dexec.mainClass=examples.search.FirstSearch -->
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.6.3</version>

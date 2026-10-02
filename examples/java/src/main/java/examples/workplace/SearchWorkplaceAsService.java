@@ -27,24 +27,41 @@ import examples.SmartSearchConnectionConfig;
  *
  * <p><b>Precondition.</b> Your service key is a member of SMARTSEARCH_WORKSPACE_ID.
  * Run: {@code ./run.sh SearchWorkplaceAsService "blood pressure"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class SearchWorkplaceAsService {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String text = ExampleRunner.queryText(args, "travel policy");
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 // builder(text) sets the query text; nothing else is required.
-                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(text).build();
+                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(
+                    text
+                ).build();
 
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/search
                 // Errors: WorkspaceClientException with the HTTP status (getStatusCode()) and the
                 // server's error code (getCode()), for example when the key is not a member.
-                WorkspaceResult result = ss.workplace().search(SmartSearchConnectionConfig.workspaceId(), request);
+                WorkspaceResult result = ss
+                    .workplace()
+                    .search(SmartSearchConnectionConfig.workspaceId(), request);
 
                 // getBody() = { "documents": [ { "title", "snippet", "source_url", ... }, ... ] }
                 // getRequestId() identifies the call; quote it when reporting a problem.
-                System.out.println("HTTP " + result.getStatusCode() + " requestId=" + (result.getRequestId() != null ? "present" : "none"));
+                System.out.println(
+                    "HTTP " +
+                        result.getStatusCode() +
+                        " requestId=" +
+                        (result.getRequestId() != null ? "present" : "none")
+                );
                 WorkplaceResultPrinter.printDocuments(result.getBody());
             }
         });

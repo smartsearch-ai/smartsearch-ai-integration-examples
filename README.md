@@ -1,12 +1,13 @@
 # SmartSearch AI Integration Examples
 
-Runnable examples that show how to integrate with **SmartSearch AI** from Java and Python. They
+Runnable examples that show how to integrate with **SmartSearch AI** from Java, Python and TypeScript. They
 are written for developers who have never used SmartSearch AI: follow the learning path step by
 step, and read each example's comments alongside its output.
 
-> **Status:** preview. Java and Python examples are available, following the same learning path.
+> **Status:** preview. Java, Python and TypeScript examples follow the same learning path.
 > Use the supplied public SDK preview built from SDK 4.5.0.7. Package publication is pending;
-> follow the local artifact setup instructions below.
+> follow the local artifact setup instructions below. TypeScript uses Node native HTTP calls
+> and has no unpublished SDK dependency.
 
 ## What you can do
 
@@ -19,14 +20,16 @@ step, and read each example's comments alongside its output.
 
 ## Prerequisites
 
-| | Java | Python |
-|---|---|---|
-| Runtime | Java 21+ | Python 3.10+ |
-| SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` ([setup](examples/python/README.md#setup)) |
+| | Java | Python | TypeScript |
+|---|---|---|---|
+| Runtime | Java 21+ | Python 3.10+ | Node.js 22.9+ |
+| SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` ([setup](examples/python/README.md#setup)) | Native HTTP teaching helper ([setup](examples/typescript/README.md#set-up-once)) |
 
 ## What your administrator sets up
 
-A SmartSearch AI Owner completes these steps in the Admin UI:
+A SmartSearch AI Owner configures the parts your application needs in the Admin UI.
+Project search needs a service key assigned to its project. General Workplace calls need
+workspace membership. Registration and delegation setup are optional until you use those steps:
 
 1. **Identity provider:** under **⋮ → Identity providers**, register your issuer and public
    JWKS URL for password-free users and signed assertions.
@@ -63,11 +66,13 @@ application.**
 
 ## Learning path
 
-The [Java README](examples/java/README.md#learning-path) and the
-[Python README](examples/python/README.md#learning-path) list every step with its run command.
+The [Java README](examples/java/README.md#learning-path),
+[Python README](examples/python/README.md#learning-path) and
+[TypeScript README](examples/typescript/README.md#learning-path) list every step with its run command.
 In short:
 
-1. **Getting started**: connect with your service key (`ConnectAndCheckAccess`).
+1. **Choose your task**: begin with project search or Workplace. If your key has provisioning
+   permission, `ConnectAndCheckAccess` checks its Admin provisioning capabilities.
 2. **Project search**: from a first search to filters, sorting, facets, and semantic, hybrid and
    reranked search, one capability per example. [SEARCH_GUIDE.md](examples/java/SEARCH_GUIDE.md)
    explains the concepts.

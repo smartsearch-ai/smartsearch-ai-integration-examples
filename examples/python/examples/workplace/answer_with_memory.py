@@ -22,26 +22,37 @@ Run: ./run.sh answer_with_memory "What is a normal blood pressure?"
 
 import json
 
-from smartsearch_ai import MemoryMode, Mode, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, query_text, run, shorten, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    question = query_text(args, "What is our travel policy?")
-    with connect() as ss:
-        for memory in (MemoryMode.STANDARD, MemoryMode.AGENTIC):
-            request = WorkspaceQueryRequest(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    question = _common.query_text(args, "What is our travel policy?")
+    with _common.connect() as ss:
+        for memory in (
+            smartsearch_ai.MemoryMode.STANDARD,
+            smartsearch_ai.MemoryMode.AGENTIC,
+        ):
+            request = smartsearch_ai.WorkspaceQueryRequest(
                 query=question,
-                mode=Mode.ANSWER,
-                memory_mode=memory,                     # STANDARD or AGENTIC
+                mode=smartsearch_ai.Mode.ANSWER,
+                memory_mode=memory,  # STANDARD or AGENTIC
             )
             # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query
-            body = ss.workplace().query(workspace_id(), request).body
-            # memory = { "mode": what the server used, "write_status": what it did with memory }
-            print(f"{memory.name}: memory={json.dumps(body.get('memory'), separators=(',', ':'))}"
-                  f" answer={shorten(body.get('answer'), 100)}")
+            body = ss.workplace().query(_common.workspace_id(), request).body
+            # memory = { "mode": what the server used, "write_status": what it
+            # did with memory }
+            print(
+                f"{memory.name}: memory={json.dumps(body.get('memory'), separators=(',', ':'))}"
+                f" answer={_common.shorten(body.get('answer'), 100)}"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

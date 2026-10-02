@@ -11,9 +11,8 @@ import co.smartsearchai.provisioning.ProvisioningModels.Profile;
 import co.smartsearchai.provisioning.ProvisioningModels.SourceGrant;
 import co.smartsearchai.provisioning.ProvisioningModels.SubmitJob;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
-
+import examples.SmartSearchConnectionConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -39,41 +38,87 @@ import java.util.Set;
  * granted on the source (default {@code everyone}).
  *
  * <p>Run: {@code ./run.sh RegisterUsersWithWorkspaceAccess}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect per-user job states; inspect PARTIAL/FAILED items.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class RegisterUsersWithWorkspaceAccess {
 
-    private static final String IDEMPOTENCY_KEY = "sdk-example-onboard-users-v1";
+    private static final String IDEMPOTENCY_KEY =
+        "sdk-example-onboard-users-v1";
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String workspaceId = SmartSearchConnectionConfig.workspaceId();
-            String sourceId = SmartSearchConnectionConfig.require("SMARTSEARCH_SOURCE_ID");
-            String group = SmartSearchConnectionConfig.optional("SMARTSEARCH_GRANT_GROUP", "everyone");
+            String sourceId = SmartSearchConnectionConfig.require(
+                "SMARTSEARCH_SOURCE_ID"
+            );
+            String group = SmartSearchConnectionConfig.optional(
+                "SMARTSEARCH_GRANT_GROUP",
+                "everyone"
+            );
 
             // Source grant: on this source, the user sees documents open to `group`.
             // Grants(groups, roles, securityKeys); expected revision 0 = the user has no grant yet.
-            SourceGrant grant = new SourceGrant(sourceId, 0, new Grants(List.of(group), List.of(), List.of()));
+            SourceGrant grant = new SourceGrant(
+                sourceId,
+                0,
+                new Grants(List.of(group), List.of(), List.of())
+            );
             // Membership: the user joins the workspace, with the grant above.
             // Expected membership revision null = not sent.
-            Membership membership = new Membership(workspaceId, null, List.of(grant));
+            Membership membership = new Membership(
+                workspaceId,
+                null,
+                List.of(grant)
+            );
 
             EnsureItem user = new EnsureItem(
-                    "user-1", "sdk-example-user-1",
-                    new Profile("sdk-example-user-1@example.com", "Ada", "Example", "Ada Example"),
-                    "GUEST", Set.of(), List.of(membership),                         // the access to give
-                    new ExternalIdentity("sdk-example-user-1", "sdk-example-user-1"));
+                "user-1",
+                "sdk-example-user-1",
+                new Profile(
+                    "sdk-example-user-1@example.com",
+                    "Ada",
+                    "Example",
+                    "Ada Example"
+                ),
+                "GUEST",
+                Set.of(),
+                List.of(membership), // the access to give
+                new ExternalIdentity("sdk-example-user-1", "sdk-example-user-1")
+            );
 
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 ProvisioningClient provisioning = ss.users();
-                SubmitJob job = new SubmitJob(UserProvisioningHelper.tenantScope(), SmartSearchConnectionConfig.integrationId(), JobKind.ONBOARD_USERS, List.of(user));
+                SubmitJob job = new SubmitJob(
+                    UserProvisioningHelper.tenantScope(),
+                    SmartSearchConnectionConfig.integrationId(),
+                    JobKind.ONBOARD_USERS,
+                    List.of(user)
+                );
 
                 // POST {adminUrl}/search-admin/api/provisioning/v1/jobs  (Idempotency-Key header)
                 // Errors: as RegisterUsers. Each user's outcome is reported per item (printItems below).
-                String jobId = provisioning.submitJob(job, IDEMPOTENCY_KEY).getBody().path("job_id").asText();
+                String jobId = provisioning
+                    .submitJob(job, IDEMPOTENCY_KEY)
+                    .getBody()
+                    .path("job_id")
+                    .asText();
                 System.out.println("Submitted onboarding job " + jobId);
 
-                JsonNode done = UserProvisioningHelper.waitForJob(provisioning, jobId, Duration.ofSeconds(60));
-                System.out.println("Job finished: state=" + done.path("state").asText());
+                JsonNode done = UserProvisioningHelper.waitForJob(
+                    provisioning,
+                    jobId,
+                    Duration.ofSeconds(60)
+                );
+                System.out.println(
+                    "Job finished: state=" + done.path("state").asText()
+                );
                 UserProvisioningHelper.printItems(provisioning, jobId);
             }
         });

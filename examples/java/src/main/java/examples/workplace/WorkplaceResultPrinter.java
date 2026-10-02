@@ -14,26 +14,35 @@ import examples.ExampleRunner;
  */
 public final class WorkplaceResultPrinter {
 
-    private WorkplaceResultPrinter() {
-    }
+    private WorkplaceResultPrinter() {}
 
-    /** Prints the documents of a search or retrieval-only query. */
+    /** Prints the documents of a search. Retrieval-only query evidence is in sources. */
     public static void printDocuments(JsonNode body) {
         JsonNode docs = body.path("documents");
         System.out.println("documents=" + docs.size());
         int rank = 1;
         for (JsonNode doc : docs) {
-            System.out.printf("%2d. %s%n", rank++, ExampleRunner.shorten(doc.path("title").asText(), 90));
+            System.out.printf(
+                "%2d. %s%n",
+                rank++,
+                ExampleRunner.shorten(doc.path("title").asText(), 90)
+            );
         }
     }
 
     /** Prints an answer and the sources it cites. */
     public static void printAnswer(JsonNode body) {
-        System.out.println("answer: " + ExampleRunner.shorten(body.path("answer").asText(), 300));
+        System.out.println(
+            "answer: " +
+                ExampleRunner.shorten(body.path("answer").asText(), 300)
+        );
         JsonNode sources = body.path("sources");
         System.out.println("sources=" + sources.size());
         for (JsonNode source : sources) {
-            System.out.println("  - " + ExampleRunner.shorten(source.path("title").asText(), 90));
+            System.out.println(
+                "  - " +
+                    ExampleRunner.shorten(source.path("title").asText(), 90)
+            );
         }
     }
 }

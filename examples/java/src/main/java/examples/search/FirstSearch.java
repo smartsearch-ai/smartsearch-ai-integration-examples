@@ -4,8 +4,8 @@ import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.SearchQuery;
 import co.smartsearchai.search.SearchResult;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Your first project search, and how to read what comes back.
@@ -24,9 +24,17 @@ import examples.ExampleRunner;
  * {@code original_language}, {@code runtime}, {@code status}); change the field names for yours.
  *
  * <p>Run: {@code ./run.sh FirstSearch "star wars"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class FirstSearch {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
@@ -34,10 +42,10 @@ public final class FirstSearch {
                 // each hit should carry (name each one: wildcards are rejected); size is how many
                 // hits to return (default 10).
                 SearchQuery query = SearchQuery.builder()
-                        .q(ExampleRunner.queryText(args, "star wars"))
-                        .responseFields("title", "release_date", "vote_average")
-                        .size(5)
-                        .build();
+                    .q(ExampleRunner.queryText(args, "star wars"))
+                    .responseFields("title", "release_date", "vote_average")
+                    .size(5)
+                    .build();
                 // toJson() shows the exact body the SDK will send. Useful while learning and in logs.
                 System.out.println("request: " + query.toJson());
 
@@ -45,7 +53,10 @@ public final class FirstSearch {
                 // Authenticates with the service key's token. Throws SearchException when the
                 // server refuses the request (for example HTTP 404 for an unknown project ID) or
                 // when no response arrives (statusCode() == 0). See HandleErrorsAndWarnings.
-                SearchResult result = ss.search().search(SmartSearchConnectionConfig.projectId(), query);
+                SearchResult result = ss
+                    .search()
+                    .search(SmartSearchConnectionConfig.projectId(), query);
+                SearchResultPrinter.requireSuccess(result);
 
                 // Envelope fields on every response:
                 //   code()                 1 = success
@@ -53,18 +64,36 @@ public final class FirstSearch {
                 //   searchId()             identifies this search; quote it when reporting a problem
                 //   effectiveNeuralMode()  the search technique the server actually ran
                 //   warning()              set when the server changed something you asked for
-                System.out.println("code=" + result.code() + " message=" + result.message()
-                        + " searchId=" + (result.searchId() != null ? "present" : "none")
-                        + " mode=" + result.effectiveNeuralMode()
-                        + " warning=" + result.warning());
+                System.out.println(
+                    "code=" +
+                        result.code() +
+                        " message=" +
+                        result.message() +
+                        " searchId=" +
+                        (result.searchId() != null ? "present" : "none") +
+                        " mode=" +
+                        result.effectiveNeuralMode() +
+                        " warning=" +
+                        result.warning()
+                );
 
                 // result() holds the hits (see SearchResultPrinter for the shape). Each hit's _source carries
                 // only the responseFields you asked for.
-                JsonNode hits = result.result().path("hits").path("hits");
+                JsonNode hits = SearchResultPrinter.requireSuccess(result)
+                    .result()
+                    .path("hits")
+                    .path("hits");
                 for (JsonNode hit : hits) {
                     JsonNode doc = hit.path("_source");
-                    System.out.println("  " + doc.path("title").asText()
-                            + " (" + doc.path("release_date").asText() + ", rated " + doc.path("vote_average").asText() + ")");
+                    System.out.println(
+                        "  " +
+                            doc.path("title").asText() +
+                            " (" +
+                            doc.path("release_date").asText() +
+                            ", rated " +
+                            doc.path("vote_average").asText() +
+                            ")"
+                    );
                 }
             }
         });

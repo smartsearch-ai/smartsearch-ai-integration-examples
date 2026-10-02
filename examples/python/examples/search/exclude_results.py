@@ -7,25 +7,39 @@ every filter type. With ``Filter.terms``, a document is removed if it has ANY of
 Precondition: as ``first_search``. Run: ./run.sh exclude_results love
 """
 
-from smartsearch_ai import Filter, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    with connect() as ss:
-        query = SearchQuery(
-            query_text(args, "love"),
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    with _common.connect() as ss:
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "love"),
             response_fields=["title", "genres", "status"],
             exclude=[
-                Filter.terms("genres.name", "Drama", "Romance"),   # neither genre
-                Filter.term("status", "Rumored"),                  # and not unreleased
+                smartsearch_ai.Filter.terms(
+                    "genres.name", "Drama", "Romance"
+                ),  # neither genre
+                smartsearch_ai.Filter.term(
+                    "status", "Rumored"
+                ),  # and not unreleased
             ],
             size=5,
         )
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), query), "title", "genres", "status")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), query),
+            "title",
+            "genres",
+            "status",
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

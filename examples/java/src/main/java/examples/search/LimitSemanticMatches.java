@@ -3,8 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.NeuralMode;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Control semantic matching: how many close-in-meaning documents to consider and return.
@@ -19,24 +19,45 @@ import examples.ExampleRunner;
  *
  * <p>Precondition: as {@code KeywordVsSemanticVsHybrid}.
  * Run: {@code ./run.sh LimitSemanticMatches "a toy cowboy afraid of being replaced"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class LimitSemanticMatches {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String q = ExampleRunner.queryText(args, "a toy cowboy afraid of being replaced");
+            String q = ExampleRunner.queryText(
+                args,
+                "a toy cowboy afraid of being replaced"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                for (int top : new int[]{3, 10}) {
+                for (int top : new int[] { 3, 10 }) {
                     SearchQuery query = SearchQuery.builder()
-                            .q(q)
-                            .neuralMode(NeuralMode.A_KNN)       // semantic only
-                            .neuralMatches(top, 100)            // keep the best `top` of 100 candidates
-                            .responseFields("title")
-                            .size(10)
-                            .build();
-                    System.out.println("neuralMatches(top=" + top + ", total=100), size=10:");
+                        .q(q)
+                        .neuralMode(NeuralMode.A_KNN) // semantic only
+                        .neuralMatches(top, 100) // keep the best `top` of 100 candidates
+                        .responseFields("title")
+                        .size(10)
+                        .build();
+                    System.out.println(
+                        "neuralMatches(top=" + top + ", total=100), size=10:"
+                    );
                     // POST {apiUrl}/core/projects/{projectId}/search
-                    SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), query), "title");
+                    SearchResultPrinter.printHits(
+                        ss
+                            .search()
+                            .search(
+                                SmartSearchConnectionConfig.projectId(),
+                                query
+                            ),
+                        "title"
+                    );
                 }
             }
         });

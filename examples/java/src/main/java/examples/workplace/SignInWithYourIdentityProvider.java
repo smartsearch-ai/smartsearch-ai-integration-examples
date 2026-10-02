@@ -5,8 +5,8 @@ import co.smartsearchai.workplace.UserWorkplace;
 import co.smartsearchai.workplace.WorkspaceQueryRequest;
 import co.smartsearchai.workplace.WorkspaceQueryRequest.MemoryMode;
 import co.smartsearchai.workplace.WorkspaceQueryRequest.Mode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Your users sign in to YOUR identity provider; your backend then searches and answers as them
@@ -34,31 +34,62 @@ import examples.ExampleRunner;
  * </ul>
  *
  * <p>Run: {@code ./run.sh SignInWithYourIdentityProvider "What is our travel policy?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class SignInWithYourIdentityProvider {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String query = ExampleRunner.queryText(args, "What is our travel policy?");
+            String query = ExampleRunner.queryText(
+                args,
+                "What is our travel policy?"
+            );
             String workspaceId = SmartSearchConnectionConfig.workspaceId();
             // asUser: POST {authUrl}/realms/{realm}/protocol/openid-connect/token
             //   grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the user's token.
             //   Throws CredentialAcquisitionException when the identity server refuses, for example
             //   for an expired or already-used assertion.
-            try (SmartSearchAi ss = SmartSearchConnectionConfig.connect();
-                 UserWorkplace user = ss.asUser(SmartSearchConnectionConfig.require("SMARTSEARCH_USER_ASSERTION"))) {
-                System.out.println("Signed in as the user until " + user.expiresAt());
+            try (
+                SmartSearchAi ss = SmartSearchConnectionConfig.connect();
+                UserWorkplace user = ss.asUser(
+                    SmartSearchConnectionConfig.require(
+                        "SMARTSEARCH_USER_ASSERTION"
+                    )
+                )
+            ) {
+                System.out.println(
+                    "Signed in as the user until " + user.expiresAt()
+                );
 
                 // Search: only the documents this user is allowed to see.
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/search   (as the user)
-                WorkplaceResultPrinter.printDocuments(user.search(workspaceId, WorkspaceQueryRequest.builder(query).build()).getBody());
+                WorkplaceResultPrinter.printDocuments(
+                    user
+                        .search(
+                            workspaceId,
+                            WorkspaceQueryRequest.builder(query).build()
+                        )
+                        .getBody()
+                );
 
                 // Answer: written only from those documents.
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query   (as the user)
-                var answer = user.query(workspaceId, WorkspaceQueryRequest.builder(query)
-                        .mode(Mode.ANSWER)
-                        .memoryMode(MemoryMode.STANDARD)        // AGENTIC would use this user's own long-term memory
-                        .build()).getBody();
+                var answer = user
+                    .query(
+                        workspaceId,
+                        WorkspaceQueryRequest.builder(query)
+                            .mode(Mode.ANSWER)
+                            .memoryMode(MemoryMode.STANDARD) // AGENTIC would use this user's own long-term memory
+                            .build()
+                    )
+                    .getBody();
                 WorkplaceResultPrinter.printAnswer(answer);
             }
         });

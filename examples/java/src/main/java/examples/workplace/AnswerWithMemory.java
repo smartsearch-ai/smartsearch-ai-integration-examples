@@ -30,23 +30,52 @@ import examples.SmartSearchConnectionConfig;
  * <p><b>Precondition.</b> Your service key is a member of SMARTSEARCH_WORKSPACE_ID, which has an
  * answering agent. Note that the AGENTIC call below records the question in your service key's
  * memory. Run: {@code ./run.sh AnswerWithMemory "What is a normal blood pressure?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class AnswerWithMemory {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String question = ExampleRunner.queryText(args, "What is our travel policy?");
+            String question = ExampleRunner.queryText(
+                args,
+                "What is our travel policy?"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                for (MemoryMode memory : new MemoryMode[]{MemoryMode.STANDARD, MemoryMode.AGENTIC}) {
-                    WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(question)
+                for (MemoryMode memory : new MemoryMode[] {
+                    MemoryMode.STANDARD,
+                    MemoryMode.AGENTIC,
+                }) {
+                    WorkspaceQueryRequest request =
+                        WorkspaceQueryRequest.builder(question)
                             .mode(Mode.ANSWER)
-                            .memoryMode(memory)                     // STANDARD or AGENTIC
+                            .memoryMode(memory) // STANDARD or AGENTIC
                             .build();
                     // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query
-                    JsonNode body = ss.workplace().query(SmartSearchConnectionConfig.workspaceId(), request).getBody();
+                    JsonNode body = ss
+                        .workplace()
+                        .query(
+                            SmartSearchConnectionConfig.workspaceId(),
+                            request
+                        )
+                        .getBody();
                     // memory = { "mode": what the server used, "write_status": what it did with memory }
-                    System.out.println(memory + ": memory=" + body.path("memory")
-                            + " answer=" + ExampleRunner.shorten(body.path("answer").asText(), 100));
+                    System.out.println(
+                        memory +
+                            ": memory=" +
+                            body.path("memory") +
+                            " answer=" +
+                            ExampleRunner.shorten(
+                                body.path("answer").asText(),
+                                100
+                            )
+                    );
                 }
             }
         });

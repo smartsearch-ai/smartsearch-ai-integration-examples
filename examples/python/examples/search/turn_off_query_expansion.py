@@ -11,26 +11,48 @@ expansion changes anything on your project.
 Precondition: as ``first_search``. Run: ./run.sh turn_off_query_expansion car
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery, SearchResult
+import smartsearch_ai
 
-from examples._common import connect, hits_of, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "car")
-    with connect() as ss:
-        base = dict(neural_mode=NeuralMode.BM25, response_fields=["title"], size=5)
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "car")
+    with _common.connect() as ss:
+        base = dict(
+            neural_mode=smartsearch_ai.NeuralMode.BM25,
+            response_fields=["title"],
+            size=5,
+        )
         print("Project default:")
         # POST {api_url}/core/projects/{project_id}/search
-        print_with_scores(ss.search().search(project_id(), SearchQuery(q, **base)))
+        print_with_scores(
+            ss.search().search(
+                _common.project_id(), smartsearch_ai.SearchQuery(q, **base)
+            )
+        )
         print("Query expansion off:")
-        print_with_scores(ss.search().search(project_id(), SearchQuery(q, **base, disable_query_expansion=True)))
+        print_with_scores(
+            ss.search().search(
+                _common.project_id(),
+                smartsearch_ai.SearchQuery(
+                    q, **base, disable_query_expansion=True
+                ),
+            )
+        )
 
 
-def print_with_scores(result: SearchResult) -> None:
-    for hit in hits_of(result):
-        print(f"  {str(hit.get('_source', {}).get('title')):<40} score={hit.get('_score') or 0:.3f}")
+def print_with_scores(result: smartsearch_ai.SearchResult) -> None:
+    for hit in _common.hits_of(result):
+        print(
+            f"  {str(hit.get('_source', {}).get('title')):<40} score={hit.get('_score') or 0:.3f}"
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

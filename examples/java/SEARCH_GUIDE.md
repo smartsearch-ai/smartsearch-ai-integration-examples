@@ -1,14 +1,23 @@
 # Project search guide (SSPL)
 
-This guide explains how a SmartSearch AI project search works and points to the example that
-shows each part. The examples are in [`src/main/java/examples/search`](src/main/java/examples/search).
+Imagine you are building a movie finder. Someone types `star wars`; your job is to return
+useful titles, let them narrow the list, and explain why the order changes. This guide builds
+that search one decision at a time. The runnable examples are in
+[`src/main/java/examples/search`](src/main/java/examples/search).
+
+Start with three questions: **What should match? What should come first? What should the screen
+show?** Query text and filters answer the first, ranking answers the second, and returned
+fields answer the third. Changing the fields you display does not change which fields are
+searched.
 
 ## The request
 
 A search is one request to `POST {SMARTSEARCH_API_BASE_URL}/core/projects/{projectId}/search`
-with a JSON body in **SSPL**, the SmartSearch search request language. You never write the JSON:
-`SearchQuery.builder()` writes it, checks every value, and throws `IllegalArgumentException`
-before sending when something is invalid. `SearchQuery.toJson()` shows the exact body.
+with a JSON body in **SSPL**, the SmartSearch search request language. In Java,
+`SearchQuery.builder()` assembles that JSON and checks supported input constraints; invalid
+builder values throw `IllegalArgumentException` before sending. The server still checks
+permissions, resource state and whether the configured project supports the request.
+`SearchQuery.toJson()` shows the body. These examples use the curated public request fields.
 
 ```java
 SearchQuery query = SearchQuery.builder()
@@ -19,6 +28,15 @@ SearchQuery query = SearchQuery.builder()
         .build();
 SearchResult result = ss.search().search(projectId, query);
 ```
+
+This fragment runs inside the connection setup shown in `FirstSearch`. Read it as a sentence:
+“Find `star wars`, keep English-language films, and return up to ten hits showing title and
+release date.” A **hit** is a returned document. The language filter decides eligibility; it
+does not award extra relevance points.
+
+**Try it:** run the unfiltered first-search example, then add the language filter. Predict which
+titles will disappear. Finally remove only `release_date` from `responseFields`: the matching
+documents should not change merely because you display fewer fields.
 
 An SSPL request has five parts:
 
@@ -50,9 +68,13 @@ Each hit has `_source` (the fields you asked for), `_score` (when the order is b
 `highlight` (when you asked for it). Count the hits you received; the response does not carry a
 reliable total number of matches.
 
-When the server refuses a request, the SDK throws `SearchException` with the HTTP status
-(`statusCode()`, 0 when no response arrived) and the server's `serverMessage()` and
-`errorMessage()`. See `HandleErrorsAndWarnings`.
+There are two checks, not one: the HTTP response must succeed, and the search envelope must
+report `code=1`. An HTTP 200 response with `code=0` is a refused or failed search, not a successful
+search with zero matches. Check the envelope before reading hits or facets.
+
+For HTTP/transport failures the SDK throws `SearchException`, carrying the HTTP status
+(`statusCode()`, 0 when no response arrived) and server details when available. The examples
+also reject unsuccessful search envelopes. See `HandleErrorsAndWarnings`.
 
 ## Filters
 
@@ -70,8 +92,16 @@ Filters are yes/no conditions. They remove documents and do not change the score
 Combine them: every `filter(f)` must match (AND), at least one inside `anyOf(f1, f2, ...)` must
 match (OR), and no `exclude(f)` may match (NOT). See `CombineFiltersWithAnyOf`.
 
+For example, “English AND (Comedy OR Drama) AND NOT unreleased” is three decisions: a required
+language, a choice of genres, and an exclusion. Put the genre alternatives inside one `anyOf`;
+two ordinary genre filters would ask each document to satisfy both.
+
 For a list of objects, such as `genres: [{"id": 35, "name": "Comedy"}]`, filter on the property:
 `genres.name`.
+
+Date bounds depend on the field's configured format. The Movies sample accepts whole years,
+so `gte=2000, lt=2001` selects the year 2000 in that sample. Do not assume another project's date
+field uses the same numeric format; check its schema before copying the bounds.
 
 ## Search techniques
 
@@ -89,6 +119,10 @@ Semantic and hybrid search need a project with embeddings. The enum also lists
 project cannot run the mode you asked for, the server runs another one, reports it in
 `effectiveNeuralMode()` and explains in `warning()`. See `KeywordVsSemanticVsHybrid`,
 `TuneHybridSearch` (fusion settings) and `LimitSemanticMatches` (how many semantic candidates).
+
+**Compare before tuning:** use the same query for keyword, semantic and hybrid search. Note the
+first three titles and the reported effective mode. A semantic request that falls back to
+keyword search has not demonstrated semantic retrieval, even if the titles look plausible.
 
 ## Reranking
 
@@ -117,6 +151,9 @@ distinct values) power facet lists. They need a project **without document secur
 project where each document carries access rules, the server refuses aggregations so that counts
 cannot reveal documents the caller may not see. See `FacetCounts`.
 
+Use an administrator-approved sample project for this exercise. Keep document access rules
+intact; a facet example is not a reason to relax them.
+
 ## Several searches, and use cases
 
 - `multiSearch(projectId, queries)` sends several searches in one request
@@ -140,10 +177,11 @@ answer engine for company knowledge in workspaces, with three calls:
 ## Acting as your users
 
 Searching, querying or chatting as a user applies that user's access rules. Register the user
-with your own user ID (`RegisterUsers`); then, for each request, your backend signs a short-lived
-assertion "this is user <your user ID>" (`CreateUserAssertion`) and exchanges it, with your service
-key, for a token that acts as that user (`SignInWithYourIdentityProvider`). A service key alone
-can never act as a user.
+with your own user ID (`RegisterUsers`). To acquire a user credential, your backend signs a
+short-lived assertion "this is user <your user ID>" (`CreateUserAssertion`) and exchanges it,
+with your service key, for a token that acts as that user (`SignInWithYourIdentityProvider`).
+Reuse that credential until it expires; acquire its replacement with a fresh assertion.
+A service key alone can never act as a user.
 
 ## Example map
 

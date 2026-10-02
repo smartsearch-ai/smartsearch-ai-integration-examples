@@ -5,8 +5,8 @@ import co.smartsearchai.search.Combination;
 import co.smartsearchai.search.NeuralMode;
 import co.smartsearchai.search.Normalization;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Tune hybrid search: how the keyword list and the semantic list are fused.
@@ -29,33 +29,67 @@ import examples.ExampleRunner;
  * fusion: larger finds more, costs more.
  *
  * <p>Precondition: as {@code KeywordVsSemanticVsHybrid}. Run: {@code ./run.sh TuneHybridSearch}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class TuneHybridSearch {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String q = ExampleRunner.queryText(args, "rebels fight an evil empire in space");
+            String q = ExampleRunner.queryText(
+                args,
+                "rebels fight an evil empire in space"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 SearchQuery byRank = SearchQuery.builder()
-                        .q(q)
-                        .neuralMode(NeuralMode.A_KNN_AND_BM25)
-                        .normalization(Normalization.RANK, Combination.RRF)   // fuse by position
-                        .rankWindow(50)                                       // 50 candidates per list
-                        .rankConstant(60)                                     // RRF constant k
-                        .responseFields("title").size(5)
-                        .build();
+                    .q(q)
+                    .neuralMode(NeuralMode.A_KNN_AND_BM25)
+                    .normalization(Normalization.RANK, Combination.RRF) // fuse by position
+                    .rankWindow(50) // 50 candidates per list
+                    .rankConstant(60) // RRF constant k
+                    .responseFields("title")
+                    .size(5)
+                    .build();
                 System.out.println("Fuse by rank (RANK + RRF):");
                 // POST {apiUrl}/core/projects/{projectId}/search
-                SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), byRank), "title");
+                SearchResultPrinter.printHits(
+                    ss
+                        .search()
+                        .search(
+                            SmartSearchConnectionConfig.projectId(),
+                            byRank
+                        ),
+                    "title"
+                );
 
                 SearchQuery byScore = SearchQuery.builder()
-                        .q(q)
-                        .neuralMode(NeuralMode.A_KNN_AND_BM25)
-                        .normalization(Normalization.MIN_MAX, Combination.ARITHMETIC_MEAN)   // fuse by score
-                        .responseFields("title").size(5)
-                        .build();
-                System.out.println("Fuse by score (MIN_MAX + ARITHMETIC_MEAN):");
-                SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), byScore), "title");
+                    .q(q)
+                    .neuralMode(NeuralMode.A_KNN_AND_BM25)
+                    .normalization(
+                        Normalization.MIN_MAX,
+                        Combination.ARITHMETIC_MEAN
+                    ) // fuse by score
+                    .responseFields("title")
+                    .size(5)
+                    .build();
+                System.out.println(
+                    "Fuse by score (MIN_MAX + ARITHMETIC_MEAN):"
+                );
+                SearchResultPrinter.printHits(
+                    ss
+                        .search()
+                        .search(
+                            SmartSearchConnectionConfig.projectId(),
+                            byScore
+                        ),
+                    "title"
+                );
             }
         });
     }

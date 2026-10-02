@@ -23,32 +23,50 @@ Preconditions.
 Run: ./run.sh sign_in_with_your_identity_provider "What is our travel policy?"
 """
 
-from smartsearch_ai import MemoryMode, Mode, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, print_answer, print_documents, query_text, require, run, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    query = query_text(args, "What is our travel policy?")
-    workspace = workspace_id()
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    query = _common.query_text(args, "What is our travel policy?")
+    workspace = _common.workspace_id()
     # as_user: POST {auth_url}/realms/{realm}/protocol/openid-connect/token
-    #   grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the user's token.
-    #   Raises AuthenticationError (code TOKEN_ACQUISITION_FAILED) when the identity server
+    # grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the
+    # user's token.
+    # Raises AuthenticationError (code TOKEN_ACQUISITION_FAILED) when the
+    # identity server
     #   refuses, for example for an expired or already-used assertion.
-    with connect() as ss, ss.as_user(require("SMARTSEARCH_USER_ASSERTION")) as user:
+    with _common.connect() as ss, ss.as_user(
+        _common.require("SMARTSEARCH_USER_ASSERTION")
+    ) as user:
         print(f"Signed in as the user until {user.expires_at.isoformat()}")
         # Search: only the documents this user is allowed to see.
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the user)
-        print_documents(user.search(workspace, WorkspaceQueryRequest(query=query)).body)
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the
+        # user)
+        _common.print_documents(
+            user.search(
+                workspace, smartsearch_ai.WorkspaceQueryRequest(query=query)
+            ).body
+        )
         # Answer: written only from those documents.
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query   (as the user)
-        answer = user.query(workspace, WorkspaceQueryRequest(
-            query=query,
-            mode=Mode.ANSWER,
-            memory_mode=MemoryMode.STANDARD,    # AGENTIC would use this user's own long-term memory
-        )).body
-        print_answer(answer)
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query   (as the
+        # user)
+        answer = user.query(
+            workspace,
+            smartsearch_ai.WorkspaceQueryRequest(
+                query=query,
+                mode=smartsearch_ai.Mode.ANSWER,
+                memory_mode=smartsearch_ai.MemoryMode.STANDARD,  # AGENTIC would use this user's own long-term memory
+            ),
+        ).body
+        _common.print_answer(answer)
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

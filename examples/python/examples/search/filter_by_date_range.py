@@ -8,22 +8,33 @@ fields accept; a bound the field cannot read makes the server refuse the request
 Precondition: as ``first_search``. Run: ./run.sh filter_by_date_range love
 """
 
-from smartsearch_ai import Filter, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    with connect() as ss:
-        query = SearchQuery(
-            query_text(args, "love"),
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    with _common.connect() as ss:
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "love"),
             response_fields=["title", "release_date"],
-            filters=[Filter.range("release_date", gte=2000, lt=2001)],   # 2000 <= year < 2001
+            filters=[
+                smartsearch_ai.Filter.range("release_date", gte=2000, lt=2001)
+            ],  # 2000 <= year < 2001
             size=5,
         )
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), query), "title", "release_date")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), query),
+            "title",
+            "release_date",
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

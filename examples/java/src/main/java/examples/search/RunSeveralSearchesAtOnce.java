@@ -3,9 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.SearchQuery;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
-
+import examples.SmartSearchConnectionConfig;
 import java.util.List;
 
 /**
@@ -21,25 +20,67 @@ import java.util.List;
  * each list, as here.
  *
  * <p>Precondition: as {@code FirstSearch}. Run: {@code ./run.sh RunSeveralSearchesAtOnce}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class RunSeveralSearchesAtOnce {
 
     private static final int SHOW = 3;
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            List<String> texts = args.length > 0 ? List.of(args) : List.of("alien", "titanic", "toy story");
-            List<SearchQuery> queries = texts.stream()
-                    .map(q -> SearchQuery.builder().q(q).responseFields("title").size(SHOW).build())
-                    .toList();
+            List<String> texts =
+                args.length > 0
+                    ? List.of(args)
+                    : List.of("alien", "titanic", "toy story");
+            List<SearchQuery> queries = texts
+                .stream()
+                .map(q ->
+                    SearchQuery.builder()
+                        .q(q)
+                        .responseFields("title")
+                        .size(SHOW)
+                        .build()
+                )
+                .toList();
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 // POST {apiUrl}/core/projects/{projectId}/mSearch   (body: a JSON array of the queries)
-                JsonNode responses = ss.search().multiSearch(SmartSearchConnectionConfig.projectId(), queries).result().path("responses");
+                JsonNode responses = SearchResultPrinter.requireSuccess(
+                    ss
+                        .search()
+                        .multiSearch(
+                            SmartSearchConnectionConfig.projectId(),
+                            queries
+                        )
+                )
+                    .result()
+                    .path("responses");
                 for (int i = 0; i < responses.size(); i++) {
                     JsonNode hits = responses.get(i).path("hits").path("hits");
-                    System.out.println("\"" + texts.get(i) + "\": received " + hits.size() + " hits, showing " + Math.min(SHOW, hits.size()) + ":");
+                    System.out.println(
+                        "\"" +
+                            texts.get(i) +
+                            "\": received " +
+                            hits.size() +
+                            " hits, showing " +
+                            Math.min(SHOW, hits.size()) +
+                            ":"
+                    );
                     for (int h = 0; h < Math.min(SHOW, hits.size()); h++) {
-                        System.out.println("  - " + hits.get(h).path("_source").path("title").asText());
+                        System.out.println(
+                            "  - " +
+                                hits
+                                    .get(h)
+                                    .path("_source")
+                                    .path("title")
+                                    .asText()
+                        );
                     }
                 }
             }

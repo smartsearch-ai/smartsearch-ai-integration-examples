@@ -11,27 +11,34 @@ This example sends the same messy text both ways so you can compare the results 
 Precondition: as ``first_search``. Run: ./run.sh clean_up_user_input
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    typed = query_text(args, "  ***the!!! matrix???  ")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    typed = _common.query_text(args, "  ***the!!! matrix???  ")
+    with _common.connect() as ss:
         for clean in (False, True):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 typed,
-                trim_query=clean,               # remove surrounding whitespace
-                remove_special_chars=clean,     # remove special characters
-                neural_mode=NeuralMode.BM25,
+                trim_query=clean,  # remove surrounding whitespace
+                remove_special_chars=clean,  # remove special characters
+                neural_mode=smartsearch_ai.NeuralMode.BM25,
                 response_fields=["title"],
                 size=3,
             )
             print(f'clean-up={str(clean).lower()} for "{typed}":')
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

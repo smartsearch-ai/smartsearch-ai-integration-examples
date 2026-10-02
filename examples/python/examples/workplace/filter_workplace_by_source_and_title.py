@@ -14,25 +14,41 @@ Run: ./run.sh filter_workplace_by_source_and_title "blood pressure" pressure
 (query, then a word the title must contain).
 """
 
-from smartsearch_ai import WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, print_documents, require, run, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
     query = args[0] if len(args) > 0 else "travel policy"
     title_word = args[1] if len(args) > 1 else "policy"
-    with connect() as ss:
-        request = WorkspaceQueryRequest(
+    with _common.connect() as ss:
+        request = smartsearch_ai.WorkspaceQueryRequest(
             query=query,
-            source_ids=[require("SMARTSEARCH_SOURCE_ID")],                         # only this source
-            filters={"all": [                                                      # AND of these clauses
-                {"search_type": "match", "field": "title", "value": title_word}]},
+            source_ids=[
+                _common.require("SMARTSEARCH_SOURCE_ID")
+            ],  # only this source
+            filters={
+                "all": [  # AND of these clauses
+                    {
+                        "search_type": "match",
+                        "field": "title",
+                        "value": title_word,
+                    }
+                ]
+            },
         )
         print("Source + title filter:")
         # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search
-        print_documents(ss.workplace().search(workspace_id(), request).body)
+        _common.print_documents(
+            ss.workplace().search(_common.workspace_id(), request).body
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

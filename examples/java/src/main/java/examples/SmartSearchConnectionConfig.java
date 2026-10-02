@@ -28,14 +28,17 @@ import co.smartsearchai.SmartSearchAi;
  */
 public final class SmartSearchConnectionConfig {
 
-    private SmartSearchConnectionConfig() {
-    }
+    private SmartSearchConnectionConfig() {}
 
     /** A required variable; stops the example with a clear message when it is missing. */
     public static String require(String name) {
         String value = System.getenv(name);
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException("Environment variable " + name + " is not set (see .env.example)");
+            throw new IllegalStateException(
+                "Environment variable " +
+                    name +
+                    " is not set (see .env.example)"
+            );
         }
         return value.trim();
     }
@@ -59,12 +62,15 @@ public final class SmartSearchConnectionConfig {
      */
     public static SmartSearchAi connect() {
         return SmartSearchAi.builder()
-                .apiUrl(require("SMARTSEARCH_API_BASE_URL"))      // API gateway: project search + Workplace
-                .adminUrl(require("SMARTSEARCH_ADMIN_BASE_URL"))  // Search Admin: user provisioning
-                .authUrl(require("SMARTSEARCH_AUTH_BASE_URL"))    // identity server base URL, without /realms/...
-                .realm(require("SMARTSEARCH_REALM"))              // your realm name
-                .serviceKey(require("SMARTSEARCH_CLIENT_ID"), require("SMARTSEARCH_CLIENT_SECRET"))
-                .build();
+            .apiUrl(require("SMARTSEARCH_API_BASE_URL")) // API gateway: project search + Workplace
+            .adminUrl(require("SMARTSEARCH_ADMIN_BASE_URL")) // Search Admin: user provisioning
+            .authUrl(require("SMARTSEARCH_AUTH_BASE_URL")) // identity server base URL, without /realms/...
+            .realm(require("SMARTSEARCH_REALM")) // your realm name
+            .serviceKey(
+                require("SMARTSEARCH_CLIENT_ID"),
+                require("SMARTSEARCH_CLIENT_SECRET")
+            )
+            .build();
     }
 
     /** The project to search (SMARTSEARCH_PROJECT_ID). Your service key must be assigned to it. */

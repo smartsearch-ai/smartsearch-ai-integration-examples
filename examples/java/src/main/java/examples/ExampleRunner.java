@@ -13,8 +13,7 @@ import co.smartsearchai.workplace.WorkspaceClientException;
  */
 public final class ExampleRunner {
 
-    private ExampleRunner() {
-    }
+    private ExampleRunner() {}
 
     /** Body of an example. */
     @FunctionalInterface
@@ -33,11 +32,23 @@ public final class ExampleRunner {
             example.run();
         } catch (WorkspaceClientException e) {
             // Workplace: getStatusCode() is the HTTP status, getCode() the server's error code.
-            fail("Workplace request refused: HTTP " + e.getStatusCode() + " " + e.getCode() + " - " + e.getMessage());
+            fail(
+                "Workplace request refused: HTTP " +
+                    e.getStatusCode() +
+                    " " +
+                    e.getCode() +
+                    " - " +
+                    e.getMessage()
+            );
         } catch (ProvisioningClientException e) {
             // Provisioning: isRetryable() says whether the same request may succeed later.
-            fail("Provisioning request refused: HTTP " + e.getStatusCode() + " " + e.getCode()
-                    + (e.isRetryable() ? " (retryable)" : ""));
+            fail(
+                "Provisioning request refused: HTTP " +
+                    e.getStatusCode() +
+                    " " +
+                    e.getCode() +
+                    (e.isRetryable() ? " (retryable)" : "")
+            );
         } catch (SearchException e) {
             // Project search: statusCode() is 0 when no response arrived (network, timeout).
             fail(e.getMessage());
@@ -65,6 +76,8 @@ public final class ExampleRunner {
 
     /** Query text for an example: its command-line arguments joined, or {@code fallback} when there are none. */
     public static String queryText(String[] args, String fallback) {
-        return args.length > 0 && !args[0].isBlank() ? String.join(" ", args) : fallback;
+        return args.length > 0 && !args[0].isBlank()
+            ? String.join(" ", args)
+            : fallback;
     }
 }

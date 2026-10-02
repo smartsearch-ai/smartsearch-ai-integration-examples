@@ -7,7 +7,6 @@ import co.smartsearchai.workplace.WorkspaceQueryRequest.Mode;
 import com.fasterxml.jackson.databind.JsonNode;
 import examples.ExampleRunner;
 import examples.SmartSearchConnectionConfig;
-
 import java.util.List;
 import java.util.Map;
 
@@ -28,33 +27,76 @@ import java.util.Map;
  * which has an answering agent.
  * Run: {@code ./run.sh QueryWithFilters "What is a normal blood pressure?" pressure}
  * (question, then a word the titles must contain).
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class QueryWithFilters {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String question = args.length > 0 ? args[0] : "What is our travel policy?";
+            String question =
+                args.length > 0 ? args[0] : "What is our travel policy?";
             String titleWord = args.length > 1 ? args[1] : "policy";
-            String sourceId = SmartSearchConnectionConfig.require("SMARTSEARCH_SOURCE_ID");
+            String sourceId = SmartSearchConnectionConfig.require(
+                "SMARTSEARCH_SOURCE_ID"
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(question)
-                        .mode(Mode.ANSWER)
-                        .memoryMode(MemoryMode.STANDARD)
-                        .addSourceId(sourceId)                                          // only this source
-                        .filters(Map.of("all", List.of(                                 // every clause must match
-                                Map.of("search_type", "match", "field", "title", "value", titleWord))))
-                        .build();
+                WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(
+                    question
+                )
+                    .mode(Mode.ANSWER)
+                    .memoryMode(MemoryMode.STANDARD)
+                    .addSourceId(sourceId) // only this source
+                    .filters(
+                        Map.of(
+                            "all",
+                            List.of(
+                                // every clause must match
+                                Map.of(
+                                    "search_type",
+                                    "match",
+                                    "field",
+                                    "title",
+                                    "value",
+                                    titleWord
+                                )
+                            )
+                        )
+                    )
+                    .build();
 
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query   (with source_ids and filters)
                 // Errors: IllegalArgumentException before sending for an unsupported clause or field;
                 // WorkspaceClientException when the server refuses.
-                JsonNode body = ss.workplace().query(SmartSearchConnectionConfig.workspaceId(), request).getBody();
+                JsonNode body = ss
+                    .workplace()
+                    .query(SmartSearchConnectionConfig.workspaceId(), request)
+                    .getBody();
 
-                System.out.println("answer: " + ExampleRunner.shorten(body.path("answer").asText(), 250));
+                System.out.println(
+                    "answer: " +
+                        ExampleRunner.shorten(body.path("answer").asText(), 250)
+                );
                 System.out.println("sources=" + body.path("sources").size());
                 for (JsonNode source : body.path("sources")) {
-                    System.out.println("  [" + source.path("n").asText() + "] " + ExampleRunner.shorten(source.path("title").asText(), 70)
-                            + " (from the chosen source: " + sourceId.equals(source.path("source_id").asText()) + ")");
+                    System.out.println(
+                        "  [" +
+                            source.path("n").asText() +
+                            "] " +
+                            ExampleRunner.shorten(
+                                source.path("title").asText(),
+                                70
+                            ) +
+                            " (from the chosen source: " +
+                            sourceId.equals(source.path("source_id").asText()) +
+                            ")"
+                    );
                 }
             }
         });

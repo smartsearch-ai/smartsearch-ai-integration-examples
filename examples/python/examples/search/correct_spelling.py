@@ -8,26 +8,33 @@ Precondition: as ``first_search``, on a project with spelling correction set up 
 administrator can tell you). Run: ./run.sh correct_spelling terminater
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    misspelled = query_text(args, "terminater")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    misspelled = _common.query_text(args, "terminater")
+    with _common.connect() as ss:
         for correct in (False, True):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 misspelled,
-                auto_correct=correct,           # True: fix likely typos first
-                neural_mode=NeuralMode.BM25,    # keyword search shows the effect clearly
+                auto_correct=correct,  # True: fix likely typos first
+                neural_mode=smartsearch_ai.NeuralMode.BM25,  # keyword search shows the effect clearly
                 response_fields=["title"],
                 size=3,
             )
             print(f'autoCorrect={str(correct).lower()} for "{misspelled}":')
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

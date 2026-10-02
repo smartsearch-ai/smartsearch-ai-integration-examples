@@ -20,35 +20,48 @@ larger finds more, costs more.
 Precondition: as ``keyword_vs_semantic_vs_hybrid``. Run: ./run.sh tune_hybrid_search
 """
 
-from smartsearch_ai import Combination, NeuralMode, Normalization, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "rebels fight an evil empire in space")
-    with connect() as ss:
-        by_rank = SearchQuery(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "rebels fight an evil empire in space")
+    with _common.connect() as ss:
+        by_rank = smartsearch_ai.SearchQuery(
             q,
-            neural_mode=NeuralMode.A_KNN_AND_BM25,
-            normalization=Normalization.RANK, combination=Combination.RRF,   # fuse by position
-            rank_window=50,                                                  # 50 candidates per list
-            rank_constant=60,                                                # RRF constant k
-            response_fields=["title"], size=5,
+            neural_mode=smartsearch_ai.NeuralMode.A_KNN_AND_BM25,
+            normalization=smartsearch_ai.Normalization.RANK,
+            combination=smartsearch_ai.Combination.RRF,  # fuse by position
+            rank_window=50,  # 50 candidates per list
+            rank_constant=60,  # RRF constant k
+            response_fields=["title"],
+            size=5,
         )
         print("Fuse by rank (RANK + RRF):")
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), by_rank), "title")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), by_rank), "title"
+        )
 
-        by_score = SearchQuery(
+        by_score = smartsearch_ai.SearchQuery(
             q,
-            neural_mode=NeuralMode.A_KNN_AND_BM25,
-            normalization=Normalization.MIN_MAX, combination=Combination.ARITHMETIC_MEAN,   # fuse by score
-            response_fields=["title"], size=5,
+            neural_mode=smartsearch_ai.NeuralMode.A_KNN_AND_BM25,
+            normalization=smartsearch_ai.Normalization.MIN_MAX,
+            combination=smartsearch_ai.Combination.ARITHMETIC_MEAN,  # fuse by score
+            response_fields=["title"],
+            size=5,
         )
         print("Fuse by score (MIN_MAX + ARITHMETIC_MEAN):")
-        print_hits(ss.search().search(project_id(), by_score), "title")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), by_score), "title"
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

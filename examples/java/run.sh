@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Runs one example by its class name: ./run.sh FirstSearch [args...]
-# Finds the class in any topic package (gettingstarted, search, workplace, users).
-# Loads ../../.env when present, so settings stay out of your shell history.
+# Compile, then run the example with the original argv unchanged.
+# Quoting belongs to your shell, not to Maven's string-based exec.args parser.
 set -euo pipefail
 cd "$(dirname "$0")"
 if [ $# -lt 1 ]; then
-  echo "usage: ./run.sh <ExampleClass> [args...]   e.g. ./run.sh FirstSearch \"star wars\"" >&2
+  echo 'usage: ./run.sh <ExampleClass> [args...]   e.g. ./run.sh FirstSearch "star wars"' >&2
   exit 2
 fi
 if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi
@@ -17,9 +16,7 @@ if [ "$count" -ne 1 ]; then
   exit 2
 fi
 class=$(printf '%s' "$matches" | sed -e 's#^src/main/java/##' -e 's#\.java$##' -e 's#/#.#g')
-if [ $# -gt 0 ]; then
-  quoted=""; for arg in "$@"; do quoted="$quoted '${arg//\'/}'"; done   # keep multi-word arguments together
-  exec mvn -q compile exec:java -Dexec.mainClass="$class" -Dexec.args="$quoted"
-else
-  exec mvn -q compile exec:java -Dexec.mainClass="$class"
-fi
+# Build the dependency classpath as a file; no query text is interpolated into a command.
+mvn -q compile dependency:build-classpath -Dmdep.outputFile=target/example-classpath.txt
+classpath=$(cat target/example-classpath.txt)
+exec java -cp "target/classes:$classpath" "$class" "$@"

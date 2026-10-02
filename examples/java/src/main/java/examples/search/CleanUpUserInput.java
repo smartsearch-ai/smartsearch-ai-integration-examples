@@ -3,8 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.NeuralMode;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Clean up what users type: surrounding spaces and stray symbols.
@@ -20,25 +20,46 @@ import examples.ExampleRunner;
  * own data.
  *
  * <p>Precondition: as {@code FirstSearch}. Run: {@code ./run.sh CleanUpUserInput}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class CleanUpUserInput {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String typed = ExampleRunner.queryText(args, "  ***the!!! matrix???  ");
+            String typed = ExampleRunner.queryText(
+                args,
+                "  ***the!!! matrix???  "
+            );
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
-                for (boolean clean : new boolean[]{false, true}) {
+                for (boolean clean : new boolean[] { false, true }) {
                     SearchQuery query = SearchQuery.builder()
-                            .q(typed)
-                            .trimQuery(clean)                   // remove surrounding whitespace
-                            .removeSpecialChars(clean)          // remove special characters
-                            .neuralMode(NeuralMode.BM25)
-                            .responseFields("title")
-                            .size(3)
-                            .build();
-                    System.out.println("clean-up=" + clean + " for \"" + typed + "\":");
+                        .q(typed)
+                        .trimQuery(clean) // remove surrounding whitespace
+                        .removeSpecialChars(clean) // remove special characters
+                        .neuralMode(NeuralMode.BM25)
+                        .responseFields("title")
+                        .size(3)
+                        .build();
+                    System.out.println(
+                        "clean-up=" + clean + " for \"" + typed + "\":"
+                    );
                     // POST {apiUrl}/core/projects/{projectId}/search
-                    SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), query), "title");
+                    SearchResultPrinter.printHits(
+                        ss
+                            .search()
+                            .search(
+                                SmartSearchConnectionConfig.projectId(),
+                                query
+                            ),
+                        "title"
+                    );
                 }
             }
         });

@@ -23,25 +23,42 @@ with "Could not obtain a token".
 Run: ./run.sh search_workplace_as_user "What is our travel policy?"
 """
 
-from smartsearch_ai import WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, print_documents, query_text, require, run, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    query = query_text(args, "What is our travel policy?")
-    # as_user_from_token: POST {auth_url}/realms/{realm}/protocol/openid-connect/token
-    #   grant_type = urn:ietf:params:oauth:grant-type:token-exchange, subject_token = the user's token.
-    #   Raises AuthenticationError (code TOKEN_ACQUISITION_FAILED) when refused (grant not
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    query = _common.query_text(args, "What is our travel policy?")
+    # as_user_from_token: POST {auth_url}/realms/{realm}/protocol/openid-
+    # connect/token
+    # grant_type = urn:ietf:params:oauth:grant-type:token-exchange,
+    # subject_token = the user's token.
+    # Raises AuthenticationError (code TOKEN_ACQUISITION_FAILED) when refused
+    # (grant not
     #   enabled, token expired).
     # The UserWorkplace holds the exchanged token; close it when done (with).
-    with connect() as ss, ss.as_user_from_token(require("SMARTSEARCH_USER_ACCESS_TOKEN")) as user:
+    with _common.connect() as ss, ss.as_user_from_token(
+        _common.require("SMARTSEARCH_USER_ACCESS_TOKEN")
+    ) as user:
         # The token is not renewed: get a new one before this time.
         print(f"Acting as the user until {user.expires_at.isoformat()}")
-        # Same call as the service search, now limited to what this user may see.
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the user)
-        print_documents(user.search(workspace_id(), WorkspaceQueryRequest(query=query)).body)
+        # Same call as the service search, now limited to what this user may
+        # see.
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the
+        # user)
+        _common.print_documents(
+            user.search(
+                _common.workspace_id(),
+                smartsearch_ai.WorkspaceQueryRequest(query=query),
+            ).body
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

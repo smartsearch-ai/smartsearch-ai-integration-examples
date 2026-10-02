@@ -11,28 +11,42 @@ that ``<em>`` is the only markup, or replace the tags with your own styling.
 Precondition: as ``first_search``. Run: ./run.sh highlight_matches princess
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, hits_of, project_id, query_text, run, shorten
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    with connect() as ss:
-        query = SearchQuery(
-            query_text(args, "princess"),
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    with _common.connect() as ss:
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "princess"),
             response_fields=["title"],
-            highlight=True,                 # add matching fragments to each hit
+            highlight=True,  # add matching fragments to each hit
             size=3,
         )
         # POST {api_url}/core/projects/{project_id}/search
-        for hit in hits_of(ss.search().search(project_id(), query)):
+        for hit in _common.hits_of(
+            ss.search().search(_common.project_id(), query)
+        ):
             print("- " + str(hit.get("_source", {}).get("title")))
-            # highlight = { "<field key>": ["fragment with <em>word</em>", ...], ... }
-            fragments = dict.fromkeys(                  # an ordered set: de-duplicates, keeps order
-                shorten(f, 120) for field in hit.get("highlight", {}).values() for f in field if "<em>" in f)
+            # highlight = { "<field key>": ["fragment with <em>word</em>", ...],
+            # ... }
+            fragments = (
+                dict.fromkeys(  # an ordered set: de-duplicates, keeps order
+                    _common.shorten(f, 120)
+                    for field in hit.get("highlight", {}).values()
+                    for f in field
+                    if "<em>" in f
+                )
+            )
             for fragment in list(fragments)[:3]:
                 print("    " + fragment)
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

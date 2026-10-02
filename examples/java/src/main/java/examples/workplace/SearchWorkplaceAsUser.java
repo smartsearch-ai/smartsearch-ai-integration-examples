@@ -3,8 +3,8 @@ package examples.workplace;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.workplace.UserWorkplace;
 import co.smartsearchai.workplace.WorkspaceQueryRequest;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Search Workplace as one of your users, starting from a token the user already has
@@ -32,25 +32,50 @@ import examples.ExampleRunner;
  * with "Could not obtain a token".
  *
  * <p>Run: {@code ./run.sh SearchWorkplaceAsUser "What is our travel policy?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class SearchWorkplaceAsUser {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String query = ExampleRunner.queryText(args, "What is our travel policy?");
+            String query = ExampleRunner.queryText(
+                args,
+                "What is our travel policy?"
+            );
             // asUserFromToken: POST {authUrl}/realms/{realm}/protocol/openid-connect/token
             //   grant_type = urn:ietf:params:oauth:grant-type:token-exchange, subject_token = the user's token.
             //   Throws CredentialAcquisitionException when refused (grant not enabled, token expired).
             // The UserWorkplace holds the exchanged token; close it when done (try-with-resources).
-            try (SmartSearchAi ss = SmartSearchConnectionConfig.connect();
-                 UserWorkplace user = ss.asUserFromToken(SmartSearchConnectionConfig.require("SMARTSEARCH_USER_ACCESS_TOKEN"))) {
+            try (
+                SmartSearchAi ss = SmartSearchConnectionConfig.connect();
+                UserWorkplace user = ss.asUserFromToken(
+                    SmartSearchConnectionConfig.require(
+                        "SMARTSEARCH_USER_ACCESS_TOKEN"
+                    )
+                )
+            ) {
                 // The token is not renewed: get a new one before this time.
-                System.out.println("Acting as the user until " + user.expiresAt());
+                System.out.println(
+                    "Acting as the user until " + user.expiresAt()
+                );
 
                 // Same call as the service search, now limited to what this user may see.
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/search   (as the user)
-                WorkplaceResultPrinter.printDocuments(user.search(SmartSearchConnectionConfig.workspaceId(),
-                        WorkspaceQueryRequest.builder(query).build()).getBody());
+                WorkplaceResultPrinter.printDocuments(
+                    user
+                        .search(
+                            SmartSearchConnectionConfig.workspaceId(),
+                            WorkspaceQueryRequest.builder(query).build()
+                        )
+                        .getBody()
+                );
             }
         });
     }

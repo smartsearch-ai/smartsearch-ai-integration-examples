@@ -20,46 +20,69 @@ on the source (default ``everyone``).
 Run: ./run.sh register_users_with_workspace_access
 """
 
-from smartsearch_ai import (
-    EnsureItem, ExternalIdentity, Grants, JobKind, Membership, Profile, SourceGrant, SubmitJob,
-)
+import smartsearch_ai
 
-from examples._common import (
-    connect, integration_id, optional, print_items, require, run, tenant_scope, wait_for_job, workspace_id,
-)
+from examples import _common
 
 IDEMPOTENCY_KEY = "sdk-example-onboard-users-v1"
 
 
 def main(args: list[str]) -> None:
-    workspace = workspace_id()
-    source_id = require("SMARTSEARCH_SOURCE_ID")
-    group = optional("SMARTSEARCH_GRANT_GROUP", "everyone")
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Unused; this step reads its settings from the environment.
+    """
+    workspace = _common.workspace_id()
+    source_id = _common.require("SMARTSEARCH_SOURCE_ID")
+    group = _common.optional("SMARTSEARCH_GRANT_GROUP", "everyone")
     # Source grant: on this source, the user sees documents open to `group`.
-    # Grants(groups, roles, security_keys); expected revision 0 = the user has no grant yet.
-    grant = SourceGrant(source_id=source_id, expected_revision=0, grants=Grants(groups=[group]))
+    # Grants(groups, roles, security_keys); expected revision 0 = the user has
+    # no grant yet.
+    grant = smartsearch_ai.SourceGrant(
+        source_id=source_id,
+        expected_revision=0,
+        grants=smartsearch_ai.Grants(groups=[group]),
+    )
     # Membership: the user joins the workspace, with the grant above.
     # expected_revision None = not sent.
-    membership = Membership(workspace_id=workspace, source_grants=[grant])
-    user = EnsureItem(
-        item_key="user-1", external_user_id="sdk-example-user-1",
-        profile=Profile(email="sdk-example-user-1@example.com", first_name="Ada", last_name="Example",
-                        display_name="Ada Example"),
-        platform_role="GUEST", permissions=[], workspaces=[membership],   # the access to give
-        external_identity=ExternalIdentity(subject="sdk-example-user-1", username="sdk-example-user-1"),
+    membership = smartsearch_ai.Membership(
+        workspace_id=workspace, source_grants=[grant]
     )
-    with connect() as ss:
+    user = smartsearch_ai.EnsureItem(
+        item_key="user-1",
+        external_user_id="sdk-example-user-1",
+        profile=smartsearch_ai.Profile(
+            email="sdk-example-user-1@example.com",
+            first_name="Ada",
+            last_name="Example",
+            display_name="Ada Example",
+        ),
+        platform_role="GUEST",
+        permissions=[],
+        workspaces=[membership],  # the access to give
+        external_identity=smartsearch_ai.ExternalIdentity(
+            subject="sdk-example-user-1", username="sdk-example-user-1"
+        ),
+    )
+    with _common.connect() as ss:
         provisioning = ss.users()
-        job = SubmitJob(scope=tenant_scope(), integration_id=integration_id(),
-                        kind=JobKind.ONBOARD_USERS, items=[user])
-        # POST {admin_url}/search-admin/api/provisioning/v1/jobs  (Idempotency-Key header)
-        # Errors: as register_users. Each user's outcome is reported per item (print_items below).
+        job = smartsearch_ai.SubmitJob(
+            scope=_common.tenant_scope(),
+            integration_id=_common.integration_id(),
+            kind=smartsearch_ai.JobKind.ONBOARD_USERS,
+            items=[user],
+        )
+        # POST {admin_url}/search-admin/api/provisioning/v1/jobs  (Idempotency-
+        # Key header)
+        # Errors: as register_users. Each user's outcome is reported per item
+        # (print_items below).
         job_id = provisioning.submit_job(job, IDEMPOTENCY_KEY).body["job_id"]
         print(f"Submitted onboarding job {job_id}")
-        done = wait_for_job(provisioning, job_id, 60)
+        done = _common.wait_for_job(provisioning, job_id, 60)
         print(f"Job finished: state={done.get('state')}")
-        print_items(provisioning, job_id)
+        _common.print_items(provisioning, job_id)
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

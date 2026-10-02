@@ -32,40 +32,55 @@ Run: ./run.sh ask_a_question "What is a normal blood pressure?"
 import json
 import time
 
-from smartsearch_ai import MemoryMode, Mode, QueryOptions, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, query_text, run, shorten, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    question = query_text(args, "What is our travel policy?")
-    with connect() as ss:
-        request = WorkspaceQueryRequest(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    question = _common.query_text(args, "What is our travel policy?")
+    with _common.connect() as ss:
+        request = smartsearch_ai.WorkspaceQueryRequest(
             query=question,
-            mode=Mode.ANSWER,                           # write an answer
-            memory_mode=MemoryMode.STANDARD,            # no long-term memory
-            options=QueryOptions(
-                include_sources=True,                   # return the documents used
-                max_context_documents=5),               # the agent reads at most 5
+            mode=smartsearch_ai.Mode.ANSWER,  # write an answer
+            memory_mode=smartsearch_ai.MemoryMode.STANDARD,  # no long-term memory
+            options=smartsearch_ai.QueryOptions(
+                include_sources=True,  # return the documents used
+                max_context_documents=5,
+            ),  # the agent reads at most 5
         )
         # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query
-        # Errors: SmartSearchError (HTTP status + server error code), for example when the key is
-        # not a member or the workspace has no answering agent; RequestTimeoutError when the
+        # Errors: SmartSearchError (HTTP status + server error code), for
+        # example when the key is
+        # not a member or the workspace has no answering agent;
+        # RequestTimeoutError when the
         # answer takes longer than the read timeout.
         start = time.monotonic()
-        result = ss.workplace().query(workspace_id(), request)
+        result = ss.workplace().query(_common.workspace_id(), request)
         elapsed_ms = int((time.monotonic() - start) * 1000)
         body = result.body
-        print(f"HTTP {result.status_code} in {elapsed_ms} ms"
-              f", run_id={'present' if body.get('run_id') is not None else 'none'}"
-              f", mode={body.get('mode')}, status={body.get('status')}")
-        print("answer: " + shorten(body.get("answer"), 300))
-        # Show sources by their number n, so [1], [2] in the answer can be matched to them.
-        print(f"sources={len(body.get('sources', []))} citations={len(body.get('citations', []))}")
+        print(
+            f"HTTP {result.status_code} in {elapsed_ms} ms"
+            f", run_id={'present' if body.get('run_id') is not None else 'none'}"
+            f", mode={body.get('mode')}, status={body.get('status')}"
+        )
+        print("answer: " + _common.shorten(body.get("answer"), 300))
+        # Show sources by their number n, so [1], [2] in the answer can be
+        # matched to them.
+        print(
+            f"sources={len(body.get('sources', []))} citations={len(body.get('citations', []))}"
+        )
         for source in body.get("sources", []):
-            print(f"  [{source.get('n')}] {shorten(source.get('title'), 80)}")
+            print(
+                f"  [{source.get('n')}] {_common.shorten(source.get('title'), 80)}"
+            )
         print("memory=" + json.dumps(body.get("memory"), separators=(",", ":")))
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

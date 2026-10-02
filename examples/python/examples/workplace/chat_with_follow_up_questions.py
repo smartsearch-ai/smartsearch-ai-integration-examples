@@ -9,34 +9,60 @@ Precondition: your service key is a member of SMARTSEARCH_WORKSPACE_ID, which ha
 agent. Run: ./run.sh chat_with_follow_up_questions "Who was President Kennedy?" "When was he born?"
 """
 
-from smartsearch_ai import MemoryMode, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, run, shorten, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    workspace = workspace_id()
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    workspace = _common.workspace_id()
     first = args[0] if len(args) > 0 else "Who wrote our travel policy?"
     follow_up = args[1] if len(args) > 1 else "When was it last updated?"
-    with connect() as ss:
+    with _common.connect() as ss:
         # Turn 1, no session ID: the server starts a session.
         # POST {api_url}/workspace/v1/workspaces/{workspace_id}/chat
-        turn1 = ss.workplace().chat(workspace, WorkspaceQueryRequest(
-            query=first, memory_mode=MemoryMode.STANDARD)).body
+        turn1 = (
+            ss.workplace()
+            .chat(
+                workspace,
+                smartsearch_ai.WorkspaceQueryRequest(
+                    query=first, memory_mode=smartsearch_ai.MemoryMode.STANDARD
+                ),
+            )
+            .body
+        )
         session_id = turn1.get("session_id")
         print("Q1: " + first)
-        print("A1: " + shorten(turn1.get("answer"), 250))
+        print("A1: " + _common.shorten(turn1.get("answer"), 250))
         if session_id is None:
             raise RuntimeError("The server did not return a chat session")
 
         # Turn 2: the same session, so "he" / "it" refers to turn 1.
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/chat   (with session_id)
-        turn2 = ss.workplace().chat(workspace, WorkspaceQueryRequest(
-            query=follow_up, session_id=session_id, memory_mode=MemoryMode.STANDARD)).body
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/chat   (with
+        # session_id)
+        turn2 = (
+            ss.workplace()
+            .chat(
+                workspace,
+                smartsearch_ai.WorkspaceQueryRequest(
+                    query=follow_up,
+                    session_id=session_id,
+                    memory_mode=smartsearch_ai.MemoryMode.STANDARD,
+                ),
+            )
+            .body
+        )
         print("Q2: " + follow_up)
-        print("A2: " + shorten(turn2.get("answer"), 250))
-        print(f"same session: {str(session_id == turn2.get('session_id')).lower()}")
+        print("A2: " + _common.shorten(turn2.get("answer"), 250))
+        print(
+            f"same session: {str(session_id == turn2.get('session_id')).lower()}"
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

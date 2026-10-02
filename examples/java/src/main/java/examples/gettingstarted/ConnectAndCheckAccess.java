@@ -2,11 +2,11 @@ package examples.gettingstarted;
 
 import co.smartsearchai.SmartSearchAi;
 import com.fasterxml.jackson.databind.JsonNode;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
- * Connect with your service key and check what it may do. Run this first.
+ * Connect with your service key and read its provisioning capabilities.
  *
  * <p><b>Concepts.</b> A <i>service key</i> is the identity of your application (not of a person)
  * in SmartSearch AI: an ID starting with {@code svc-} plus a secret, issued by your administrator.
@@ -19,12 +19,20 @@ import examples.ExampleRunner;
  *
  * <p><b>Preconditions.</b> The connection settings from {@code .env.example} (see {@link SmartSearchConnectionConfig}).
  * This example asks Search Admin which user-provisioning features are enabled for the key, which
- * proves the URLs, the realm and the key all work. It needs no project or workspace.
+ * checks authentication and the Admin capabilities call only. Test project/workspace access separately. It needs no project or workspace.
  *
  * <p>Run: {@code ./run.sh ConnectAndCheckAccess}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect Admin provisioning capabilities; this does not prove search access.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class ConnectAndCheckAccess {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             // SmartSearchConnectionConfig.connect() only validates the settings; the first call below fetches a token.
@@ -41,10 +49,23 @@ public final class ConnectAndCheckAccess {
 
                 // The answer lists the provisioning job kinds this key may submit and its limits,
                 // for example kinds = ["UPSERT_USERS", "ONBOARD_USERS", ...] and max_items.
-                JsonNode capabilities = body.has("result") ? body.path("result") : body;
+                JsonNode capabilities = body.has("result")
+                    ? body.path("result")
+                    : body;
                 System.out.println("Provisioning capabilities:");
-                capabilities.properties().forEach(field ->
-                        System.out.println("  " + field.getKey() + " = " + ExampleRunner.shorten(field.getValue().toString(), 200)));
+                capabilities
+                    .properties()
+                    .forEach(field ->
+                        System.out.println(
+                            "  " +
+                                field.getKey() +
+                                " = " +
+                                ExampleRunner.shorten(
+                                    field.getValue().toString(),
+                                    200
+                                )
+                        )
+                    );
             }
         });
     }

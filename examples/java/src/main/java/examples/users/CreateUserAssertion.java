@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import examples.ExampleRunner;
 import examples.SmartSearchConnectionConfig;
 import examples.workplace.WorkplaceResultPrinter;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -95,93 +94,161 @@ import java.util.UUID;
  *
  * <p>Run: {@code ./run.sh CreateUserAssertion sdk-example-user-1} or
  * {@code ./run.sh CreateUserAssertion sdk-example-user-1 --sign-in "travel policy"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect decoded claims and public keys; never a private key or JWT.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class CreateUserAssertion {
 
     private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Base64.Encoder BASE64URL = Base64.getUrlEncoder().withoutPadding();
+    private static final Base64.Encoder BASE64URL =
+        Base64.getUrlEncoder().withoutPadding();
     private static final long LIFETIME_SECONDS = 120;
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String subject = args.length > 0 ? args[0] : "sdk-example-user-1";
             boolean signIn = args.length > 1 && args[1].equals("--sign-in");
-            String issuer = SmartSearchConnectionConfig.optional("SMARTSEARCH_ASSERTION_ISSUER", "https://login.your-company.example.com");
-            String keyId = SmartSearchConnectionConfig.optional("SMARTSEARCH_ASSERTION_KEY_ID", "example-key-1");
+            String issuer = SmartSearchConnectionConfig.optional(
+                "SMARTSEARCH_ASSERTION_ISSUER",
+                "https://login.your-company.example.com"
+            );
+            String keyId = SmartSearchConnectionConfig.optional(
+                "SMARTSEARCH_ASSERTION_KEY_ID",
+                "example-key-1"
+            );
             // The audience is the SmartSearch AI realm, built from the same settings the SDK uses.
-            String audience = SmartSearchConnectionConfig.require("SMARTSEARCH_AUTH_BASE_URL").replaceAll("/+$", "")
-                    + "/realms/" + SmartSearchConnectionConfig.require("SMARTSEARCH_REALM");
+            String audience =
+                SmartSearchConnectionConfig.require(
+                    "SMARTSEARCH_AUTH_BASE_URL"
+                ).replaceAll("/+$", "") +
+                "/realms/" +
+                SmartSearchConnectionConfig.require("SMARTSEARCH_REALM");
 
             KeyPair keys = loadOrGenerateKeys();
 
             // 1. Header: how it is signed, and with which key.
-            ObjectNode header = JSON.createObjectNode().put("alg", "RS256").put("typ", "JWT").put("kid", keyId);
+            ObjectNode header = JSON.createObjectNode()
+                .put("alg", "RS256")
+                .put("typ", "JWT")
+                .put("kid", keyId);
 
             // 2. Claims: who issued it, for which user, for whom, and for how long.
             long now = Instant.now().getEpochSecond();
             ObjectNode claims = JSON.createObjectNode()
-                    .put("iss", issuer)                              // your registered issuer
-                    .put("sub", subject)                             // your user ID, as registered
-                    .put("aud", audience)                            // the SmartSearch AI realm
-                    .put("iat", now)                                 // issued now
-                    .put("exp", now + LIFETIME_SECONDS)              // valid for at most 120 s
-                    .put("jti", UUID.randomUUID().toString());       // unique: usable once
+                .put("iss", issuer) // your registered issuer
+                .put("sub", subject) // your user ID, as registered
+                .put("aud", audience) // the SmartSearch AI realm
+                .put("iat", now) // issued now
+                .put("exp", now + LIFETIME_SECONDS) // valid for at most 120 s
+                .put("jti", UUID.randomUUID().toString()); // unique: usable once
 
             // 3. Sign: base64url(header) + "." + base64url(claims), signed with RS256.
             String signingInput = encode(header) + "." + encode(claims);
             Signature rs256 = Signature.getInstance("SHA256withRSA");
             rs256.initSign(keys.getPrivate());
             rs256.update(signingInput.getBytes(StandardCharsets.US_ASCII));
-            String assertion = signingInput + "." + BASE64URL.encodeToString(rs256.sign());
+            String assertion =
+                signingInput + "." + BASE64URL.encodeToString(rs256.sign());
 
             // The assertion is a credential: print what is in it, never the token itself.
             System.out.println("header: " + header);
             System.out.println("claims: " + claims);
-            System.out.println("assertion: " + assertion.length() + " characters, 3 parts (not printed)");
+            System.out.println(
+                "assertion: " +
+                    assertion.length() +
+                    " characters, 3 parts (not printed)"
+            );
 
             // 4. The public key set to host at your JWKS URL (public data, safe to publish).
             RSAPublicKey publicKey = (RSAPublicKey) keys.getPublic();
             ObjectNode jwks = JSON.createObjectNode();
-            jwks.putArray("keys").addObject()
-                    .put("kty", "RSA").put("use", "sig").put("alg", "RS256").put("kid", keyId)
-                    .put("n", BASE64URL.encodeToString(unsigned(publicKey.getModulus())))
-                    .put("e", BASE64URL.encodeToString(unsigned(publicKey.getPublicExponent())));
-            System.out.println("JWKS to publish (e.g. at https://login.your-company.example.com/.well-known/jwks.json):");
-            System.out.println(JSON.writerWithDefaultPrettyPrinter().writeValueAsString(jwks));
+            jwks
+                .putArray("keys")
+                .addObject()
+                .put("kty", "RSA")
+                .put("use", "sig")
+                .put("alg", "RS256")
+                .put("kid", keyId)
+                .put(
+                    "n",
+                    BASE64URL.encodeToString(unsigned(publicKey.getModulus()))
+                )
+                .put(
+                    "e",
+                    BASE64URL.encodeToString(
+                        unsigned(publicKey.getPublicExponent())
+                    )
+                );
+            System.out.println(
+                "JWKS to publish (e.g. at https://login.your-company.example.com/.well-known/jwks.json):"
+            );
+            System.out.println(
+                JSON.writerWithDefaultPrettyPrinter().writeValueAsString(jwks)
+            );
 
-            if (!signIn) return;
-
-            // 5. Optional: act as the user with it (what SignInWithYourIdentityProvider does).
+            if (!signIn) {
+                return;
+            }
             // POST {authUrl}/realms/{realm}/protocol/openid-connect/token
             //   grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the token above,
             //   authenticated with your service key. Refused (CredentialAcquisitionException) until an
             //   Owner has registered this issuer and JWKS URL, or when any check above fails.
-            try (SmartSearchAi ss = SmartSearchConnectionConfig.connect();
-                 UserWorkplace user = ss.asUser(assertion)) {
-                System.out.println("Signed in as " + subject + " until " + user.expiresAt());
+            try (
+                SmartSearchAi ss = SmartSearchConnectionConfig.connect();
+                UserWorkplace user = ss.asUser(assertion)
+            ) {
+                System.out.println(
+                    "Signed in as " + subject + " until " + user.expiresAt()
+                );
                 // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/search   (as the user)
                 String text = args.length > 2 ? args[2] : "travel policy";
-                WorkplaceResultPrinter.printDocuments(user.search(SmartSearchConnectionConfig.workspaceId(),
-                        WorkspaceQueryRequest.builder(text).build()).getBody());
+                WorkplaceResultPrinter.printDocuments(
+                    user
+                        .search(
+                            SmartSearchConnectionConfig.workspaceId(),
+                            WorkspaceQueryRequest.builder(text).build()
+                        )
+                        .getBody()
+                );
             }
         });
     }
 
     /** The private key from SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM (PKCS#8), or a new 2048-bit key. */
     private static KeyPair loadOrGenerateKeys() throws Exception {
-        String pem = SmartSearchConnectionConfig.optional("SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM", null);
+        String pem = SmartSearchConnectionConfig.optional(
+            "SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM",
+            null
+        );
         if (pem == null) {
-            System.out.println("No SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM: using a throw-away key (demo only).");
+            System.out.println(
+                "No SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM: using a throw-away key (demo only)."
+            );
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
             return generator.generateKeyPair();
         }
-        String base64 = pem.replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "").replaceAll("\\s", "");
+        String base64 = pem
+            .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "")
+            .replaceAll("\\s", "");
         KeyFactory rsa = KeyFactory.getInstance("RSA");
-        PrivateKey privateKey = rsa.generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64)));
+        PrivateKey privateKey = rsa.generatePrivate(
+            new PKCS8EncodedKeySpec(Base64.getDecoder().decode(base64))
+        );
         // An RSA private key in PKCS#8 also carries the public modulus and exponent.
         RSAPrivateCrtKey crt = (RSAPrivateCrtKey) privateKey;
-        return new KeyPair(rsa.generatePublic(new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent())), privateKey);
+        return new KeyPair(
+            rsa.generatePublic(
+                new RSAPublicKeySpec(crt.getModulus(), crt.getPublicExponent())
+            ),
+            privateKey
+        );
     }
 
     private static String encode(ObjectNode json) throws Exception {

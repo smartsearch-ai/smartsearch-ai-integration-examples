@@ -3,8 +3,8 @@ package examples.search;
 import co.smartsearchai.SmartSearchAi;
 import co.smartsearchai.search.Filter;
 import co.smartsearchai.search.SearchQuery;
-import examples.SmartSearchConnectionConfig;
 import examples.ExampleRunner;
+import examples.SmartSearchConnectionConfig;
 
 /**
  * Filter by an exact value: only French films, only comedies.
@@ -20,31 +20,57 @@ import examples.ExampleRunner;
  * {@code genres.name}. Filtering on {@code genres} itself returns no hits and no error.
  *
  * <p>Precondition: as {@code FirstSearch}. Run: {@code ./run.sh FilterByExactValue love}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect the received hits, actual retrieval mode and warning.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class FilterByExactValue {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
             String q = ExampleRunner.queryText(args, "love");
             try (SmartSearchAi ss = SmartSearchConnectionConfig.connect()) {
                 SearchQuery french = SearchQuery.builder()
-                        .q(q)
-                        .responseFields("title", "original_language")
-                        .filter(Filter.term("original_language", "fr"))   // must equal "fr"
-                        .size(3)
-                        .build();
+                    .q(q)
+                    .responseFields("title", "original_language")
+                    .filter(Filter.term("original_language", "fr")) // must equal "fr"
+                    .size(3)
+                    .build();
                 System.out.println("original_language = fr:");
                 // POST {apiUrl}/core/projects/{projectId}/search
-                SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), french), "title", "original_language");
+                SearchResultPrinter.printHits(
+                    ss
+                        .search()
+                        .search(
+                            SmartSearchConnectionConfig.projectId(),
+                            french
+                        ),
+                    "title",
+                    "original_language"
+                );
 
                 SearchQuery comedies = SearchQuery.builder()
-                        .q(q)
-                        .responseFields("title", "genres")
-                        .filter(Filter.term("genres.name", "Comedy"))     // a property inside a list of objects
-                        .size(3)
-                        .build();
+                    .q(q)
+                    .responseFields("title", "genres")
+                    .filter(Filter.term("genres.name", "Comedy")) // a property inside a list of objects
+                    .size(3)
+                    .build();
                 System.out.println("genres.name = Comedy:");
-                SearchResultPrinter.printHits(ss.search().search(SmartSearchConnectionConfig.projectId(), comedies), "title", "genres");
+                SearchResultPrinter.printHits(
+                    ss
+                        .search()
+                        .search(
+                            SmartSearchConnectionConfig.projectId(),
+                            comedies
+                        ),
+                    "title",
+                    "genres"
+                );
             }
         });
     }

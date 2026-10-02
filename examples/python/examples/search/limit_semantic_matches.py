@@ -12,26 +12,36 @@ Precondition: as ``keyword_vs_semantic_vs_hybrid``.
 Run: ./run.sh limit_semantic_matches "a toy cowboy afraid of being replaced"
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "a toy cowboy afraid of being replaced")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "a toy cowboy afraid of being replaced")
+    with _common.connect() as ss:
         for top in (3, 10):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 q,
-                neural_mode=NeuralMode.A_KNN,       # semantic only
-                neural_matches=(top, 100),          # keep the best `top` of 100 candidates
+                neural_mode=smartsearch_ai.NeuralMode.A_KNN,  # semantic only
+                neural_matches=(
+                    top,
+                    100,
+                ),  # keep the best `top` of 100 candidates
                 response_fields=["title"],
                 size=10,
             )
             print(f"neuralMatches(top={top}, total=100), size=10:")
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

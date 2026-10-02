@@ -12,22 +12,31 @@ Precondition: SMARTSEARCH_USECASE_ID is a use case of a project your service key
 Run: ./run.sh search_through_use_case "star wars"
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, query_text, require, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    usecase_id = require("SMARTSEARCH_USECASE_ID")
-    with connect() as ss:
-        query = SearchQuery(
-            query_text(args, "star wars"),
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    usecase_id = _common.require("SMARTSEARCH_USECASE_ID")
+    with _common.connect() as ss:
+        query = smartsearch_ai.SearchQuery(
+            _common.query_text(args, "star wars"),
             response_fields=["title", "release_date"],
             size=5,
         )
         # POST {api_url}/core/usecases/{usecase_id}/search
-        print_hits(ss.search().search_by_usecase(usecase_id, query), "title", "release_date")
+        _common.print_hits(
+            ss.search().search_by_usecase(usecase_id, query),
+            "title",
+            "release_date",
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

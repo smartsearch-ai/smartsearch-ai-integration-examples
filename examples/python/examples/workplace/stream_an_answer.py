@@ -24,43 +24,66 @@ agent. Run: ./run.sh stream_an_answer "What causes high blood pressure?"
 
 import json
 
-from smartsearch_ai import MemoryMode, Mode, SmartSearchError, WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, query_text, run, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    question = query_text(args, "Summarize our travel policy.")
-    request = WorkspaceQueryRequest(query=question, mode=Mode.ANSWER, memory_mode=MemoryMode.STANDARD)
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    question = _common.query_text(args, "Summarize our travel policy.")
+    request = smartsearch_ai.WorkspaceQueryRequest(
+        query=question,
+        mode=smartsearch_ai.Mode.ANSWER,
+        memory_mode=smartsearch_ai.MemoryMode.STANDARD,
+    )
     # POST {api_url}/workspace/v1/workspaces/{workspace_id}/query
-    #      with "options": {"stream": true} and Accept: text/event-stream (the SDK sets both)
-    with connect() as ss, ss.workplace().stream_query(workspace_id(), request) as stream:
+    # with "options": {"stream": true} and Accept: text/event-stream (the SDK
+    # sets both)
+    with _common.connect() as ss, ss.workplace().stream_query(
+        _common.workspace_id(), request
+    ) as stream:
         pieces = 0
         try:
-            for event in stream:                        # waits for the next event; ends after run.completed
+            for (
+                event
+            ) in stream:  # waits for the next event; ends after run.completed
                 payload = event.payload
                 if event.event == "run.started":
                     print(f"[run started, mode={payload.get('mode')}]")
                 elif event.event == "sources.selected":
                     print(f"[{payload.get('source_count')} sources selected]")
                 elif event.event == "answer.delta":
-                    print(payload.get("text", ""), end="", flush=True)   # print each piece as it arrives
+                    print(
+                        payload.get("text", ""), end="", flush=True
+                    )  # print each piece as it arrives
                     pieces += 1
                 elif event.event == "answer.completed":
-                    print(f"\n[answer completed, citations={payload.get('citation_count')}]")
+                    print(
+                        f"\n[answer completed, citations={payload.get('citation_count')}]"
+                    )
                 elif event.event == "run.completed":
                     print(f"[run completed, status={payload.get('status')}]")
                 # other names: keep-alives and future event types
-        except SmartSearchError:
-            # The run failed or timed out part-way; what was printed so far is incomplete.
+        except smartsearch_ai.SmartSearchError:
+            # The run failed or timed out part-way; what was printed so far is
+            # incomplete.
             print()
             raise
         # The final response, the same shape as query() returns.
         result = stream.result.body
-        print(f"pieces={pieces} final answer length={len(result.get('answer') or '')}"
-              f" sources={len(result.get('sources', []))}"
-              f" memory={json.dumps(result.get('memory'), separators=(',', ':'))}")
+        print("Final status: " + str(result.get("status")))
+        _common.print_answer(result)
+        print(
+            f"pieces={pieces} final answer length={len(result.get('answer') or '')}"
+            f" sources={len(result.get('sources', []))}"
+            f" memory={json.dumps(result.get('memory'), separators=(',', ':'))}"
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

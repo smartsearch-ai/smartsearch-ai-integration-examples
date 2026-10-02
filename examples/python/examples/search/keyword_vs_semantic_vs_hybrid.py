@@ -20,26 +20,37 @@ Precondition: as ``first_search``, on a project with embeddings.
 Run: ./run.sh keyword_vs_semantic_vs_hybrid "rebels fight an evil empire in space"
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "rebels fight an evil empire in space")
-    with connect() as ss:
-        for mode in (NeuralMode.BM25, NeuralMode.A_KNN, NeuralMode.A_KNN_AND_BM25):
-            query = SearchQuery(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "rebels fight an evil empire in space")
+    with _common.connect() as ss:
+        for mode in (
+            smartsearch_ai.NeuralMode.BM25,
+            smartsearch_ai.NeuralMode.A_KNN,
+            smartsearch_ai.NeuralMode.A_KNN_AND_BM25,
+        ):
+            query = smartsearch_ai.SearchQuery(
                 q,
-                neural_mode=mode,               # which technique to run
+                neural_mode=mode,  # which technique to run
                 response_fields=["title"],
                 size=5,
             )
             # POST {api_url}/core/projects/{project_id}/search
-            result = ss.search().search(project_id(), query)
+            result = ss.search().search(_common.project_id(), query)
             print(f"requested {mode.value}:")
-            print_hits(result, "title")         # prints mode=<what actually ran> and any warning
+            _common.print_hits(
+                result, "title"
+            )  # prints mode=<what actually ran> and any warning
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

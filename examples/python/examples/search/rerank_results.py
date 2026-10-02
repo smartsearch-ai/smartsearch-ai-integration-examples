@@ -16,25 +16,34 @@ Precondition: as ``first_search``, on a project with a reranker set up.
 Run: ./run.sh rerank_results "wizard school"
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "wizard school")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "wizard school")
+    with _common.connect() as ss:
         for rerank in (True, False, None):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 q,
-                rerank=rerank,                  # True / False / None = project default
+                rerank=rerank,  # True / False / None = project default
                 response_fields=["title"],
                 size=5,
             )
-            print(f"rerank={'project default' if rerank is None else str(rerank).lower()}:")
+            print(
+                f"rerank={'project default' if rerank is None else str(rerank).lower()}:"
+            )
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

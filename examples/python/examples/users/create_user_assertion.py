@@ -73,22 +73,36 @@ import json
 import time
 import uuid
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from smartsearch_ai import WorkspaceQueryRequest
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
+import smartsearch_ai
 
-from examples._common import connect, optional, print_documents, require, run, workspace_id
+from examples import _common
 
 LIFETIME_SECONDS = 120
 
 
 def main(args: list[str]) -> None:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
     subject = args[0] if len(args) > 0 else "sdk-example-user-1"
     sign_in = len(args) > 1 and args[1] == "--sign-in"
-    issuer = optional("SMARTSEARCH_ASSERTION_ISSUER", "https://login.your-company.example.com")
-    key_id = optional("SMARTSEARCH_ASSERTION_KEY_ID", "example-key-1")
-    # The audience is the SmartSearch AI realm, built from the same settings the SDK uses.
-    audience = require("SMARTSEARCH_AUTH_BASE_URL").rstrip("/") + "/realms/" + require("SMARTSEARCH_REALM")
+    issuer = _common.optional(
+        "SMARTSEARCH_ASSERTION_ISSUER", "https://login.your-company.example.com"
+    )
+    key_id = _common.optional("SMARTSEARCH_ASSERTION_KEY_ID", "example-key-1")
+    # The audience is the SmartSearch AI realm, built from the same settings the
+    # SDK uses.
+    audience = (
+        _common.require("SMARTSEARCH_AUTH_BASE_URL").rstrip("/")
+        + "/realms/"
+        + _common.require("SMARTSEARCH_REALM")
+    )
 
     key = load_or_generate_key()
 
@@ -98,59 +112,91 @@ def main(args: list[str]) -> None:
     # 2. Claims: who issued it, for which user, for whom, and for how long.
     now = int(time.time())
     claims = {
-        "iss": issuer,                          # your registered issuer
-        "sub": subject,                         # your user ID, as registered
-        "aud": audience,                        # the SmartSearch AI realm
-        "iat": now,                             # issued now
-        "exp": now + LIFETIME_SECONDS,          # valid for at most 120 s
-        "jti": str(uuid.uuid4()),               # unique: usable once
+        "iss": issuer,  # your registered issuer
+        "sub": subject,  # your user ID, as registered
+        "aud": audience,  # the SmartSearch AI realm
+        "iat": now,  # issued now
+        "exp": now + LIFETIME_SECONDS,  # valid for at most 120 s
+        "jti": str(uuid.uuid4()),  # unique: usable once
     }
 
     # 3. Sign: base64url(header) + "." + base64url(claims), signed with RS256
     #    (RSA PKCS #1 v1.5 with SHA-256).
     signing_input = encode(header) + "." + encode(claims)
-    signature = key.sign(signing_input.encode("ascii"), padding.PKCS1v15(), hashes.SHA256())
+    signature = key.sign(
+        signing_input.encode("ascii"), padding.PKCS1v15(), hashes.SHA256()
+    )
     assertion = signing_input + "." + b64url(signature)
 
-    # The assertion is a credential: print what is in it, never the token itself.
+    # The assertion is a credential: print what is in it, never the token
+    # itself.
     print("header: " + compact(header))
     print("claims: " + compact(claims))
-    print(f"assertion: {len(assertion)} characters, {len(assertion.split('.'))} parts (not printed)")
+    print(
+        f"assertion: {len(assertion)} characters, {len(assertion.split('.'))} parts (not printed)"
+    )
 
-    # 4. The public key set to host at your JWKS URL (public data, safe to publish).
+    # 4. The public key set to host at your JWKS URL (public data, safe to
+    # publish).
     numbers = key.public_key().public_numbers()
-    jwks = {"keys": [{
-        "kty": "RSA", "use": "sig", "alg": "RS256", "kid": key_id,
-        "n": b64url(numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")),   # big-endian, no sign byte
-        "e": b64url(numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")),
-    }]}
-    print("JWKS to publish (e.g. at https://login.your-company.example.com/.well-known/jwks.json):")
+    jwks = {
+        "keys": [
+            {
+                "kty": "RSA",
+                "use": "sig",
+                "alg": "RS256",
+                "kid": key_id,
+                "n": b64url(
+                    numbers.n.to_bytes((numbers.n.bit_length() + 7) // 8, "big")
+                ),  # big-endian, no sign byte
+                "e": b64url(
+                    numbers.e.to_bytes((numbers.e.bit_length() + 7) // 8, "big")
+                ),
+            }
+        ]
+    }
+    print(
+        "JWKS to publish (e.g. at https://login.your-company.example.com/.well-known/jwks.json):"
+    )
     print(json.dumps(jwks, indent=2))
 
     if not sign_in:
         return
 
-    # 5. Optional: act as the user with it (what sign_in_with_your_identity_provider does).
+    # 5. Optional: act as the user with it (what
+    # sign_in_with_your_identity_provider does).
     # POST {auth_url}/realms/{realm}/protocol/openid-connect/token
-    #   grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the token above,
-    #   authenticated with your service key. Refused (AuthenticationError) until an Owner has
+    # grant_type = urn:ietf:params:oauth:grant-type:jwt-bearer, assertion = the
+    # token above,
+    # authenticated with your service key. Refused (AuthenticationError) until
+    # an Owner has
     #   registered this issuer and JWKS URL, or when any check above fails.
-    with connect() as ss, ss.as_user(assertion) as user:
+    with _common.connect() as ss, ss.as_user(assertion) as user:
         print(f"Signed in as {subject} until {user.expires_at.isoformat()}")
-        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the user)
+        # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search   (as the
+        # user)
         text = args[2] if len(args) > 2 else "travel policy"
-        print_documents(user.search(workspace_id(), WorkspaceQueryRequest(query=text)).body)
+        _common.print_documents(
+            user.search(
+                _common.workspace_id(),
+                smartsearch_ai.WorkspaceQueryRequest(query=text),
+            ).body
+        )
 
 
 def load_or_generate_key() -> rsa.RSAPrivateKey:
     """The private key from SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM (PKCS#8), or a new 2048-bit key."""
-    pem = optional("SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM", None)
+    pem = _common.optional("SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM", None)
     if pem is None:
-        print("No SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM: using a throw-away key (demo only).")
+        print(
+            "No SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM: using a throw-away key (demo only)."
+        )
         return rsa.generate_private_key(public_exponent=65537, key_size=2048)
     key = serialization.load_pem_private_key(pem.encode("ascii"), password=None)
     if not isinstance(key, rsa.RSAPrivateKey):
-        raise ValueError("SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM must be an RSA private key")
+        raise ValueError(
+            "SMARTSEARCH_ASSERTION_PRIVATE_KEY_PEM must be an RSA private key"
+        )
     return key
 
 
@@ -167,4 +213,4 @@ def b64url(data: bytes) -> str:
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

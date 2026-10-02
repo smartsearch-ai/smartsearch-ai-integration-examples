@@ -10,7 +10,6 @@ import co.smartsearchai.workplace.WorkspaceStreamEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import examples.ExampleRunner;
 import examples.SmartSearchConnectionConfig;
-
 import java.util.Optional;
 
 /**
@@ -38,39 +37,76 @@ import java.util.Optional;
  *
  * <p><b>Precondition.</b> Your service key is a member of SMARTSEARCH_WORKSPACE_ID, which has an
  * answering agent. Run: {@code ./run.sh StreamAnAnswer "What causes high blood pressure?"}
+ *
+ * <p>Learning checkpoint: predict the change, run this step, then inspect documents, sources or the final answer for this caller.
+ * Change one value and compare. If refused, verify the stated prerequisite with your Owner.
  */
 public final class StreamAnAnswer {
 
+    /**
+     * Runs this teaching step using the settings and prerequisites described above.
+     *
+     * @param args query words or positional inputs shown in the run command
+     */
     public static void main(String[] args) {
         ExampleRunner.run(() -> {
-            String question = ExampleRunner.queryText(args, "Summarize our travel policy.");
-            WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(question)
-                    .mode(Mode.ANSWER)
-                    .memoryMode(MemoryMode.STANDARD)
-                    .build();
+            String question = ExampleRunner.queryText(
+                args,
+                "Summarize our travel policy."
+            );
+            WorkspaceQueryRequest request = WorkspaceQueryRequest.builder(
+                question
+            )
+                .mode(Mode.ANSWER)
+                .memoryMode(MemoryMode.STANDARD)
+                .build();
 
             // POST {apiUrl}/workspace/v1/workspaces/{workspaceId}/query
             //      with "options": {"stream": true} and Accept: text/event-stream (the SDK sets both)
-            try (SmartSearchAi ss = SmartSearchConnectionConfig.connect();
-                 WorkspaceStream stream = ss.workplace().streamQuery(SmartSearchConnectionConfig.workspaceId(), request)) {
-
+            try (
+                SmartSearchAi ss = SmartSearchConnectionConfig.connect();
+                WorkspaceStream stream = ss
+                    .workplace()
+                    .streamQuery(
+                        SmartSearchConnectionConfig.workspaceId(),
+                        request
+                    )
+            ) {
                 int pieces = 0;
                 try {
                     Optional<WorkspaceStreamEvent> next;
-                    while ((next = stream.next()).isPresent()) {       // waits for the next event; empty at the end
+                    while ((next = stream.next()).isPresent()) {
+                        // waits for the next event; empty at the end
                         WorkspaceStreamEvent event = next.get();
                         JsonNode payload = event.getPayload();
                         switch (event.getEvent()) {
-                            case "run.started" -> System.out.println("[run started, mode=" + payload.path("mode").asText() + "]");
-                            case "sources.selected" -> System.out.println("[" + payload.path("source_count").asText() + " sources selected]");
+                            case "run.started" -> System.out.println(
+                                "[run started, mode=" +
+                                    payload.path("mode").asText() +
+                                    "]"
+                            );
+                            case "sources.selected" -> System.out.println(
+                                "[" +
+                                    payload.path("source_count").asText() +
+                                    " sources selected]"
+                            );
                             case "answer.delta" -> {
-                                System.out.print(payload.path("text").asText());   // print each piece as it arrives
+                                System.out.print(payload.path("text").asText()); // print each piece as it arrives
                                 System.out.flush();
                                 pieces++;
                             }
-                            case "answer.completed" -> System.out.println("\n[answer completed, citations=" + payload.path("citation_count").asText() + "]");
-                            case "run.completed" -> System.out.println("[run completed, status=" + payload.path("status").asText() + "]");
-                            default -> { }                                  // keep-alives and future event types
+                            case "answer.completed" -> System.out.println(
+                                "\n[answer completed, citations=" +
+                                    payload.path("citation_count").asText() +
+                                    "]"
+                            );
+                            case "run.completed" -> System.out.println(
+                                "[run completed, status=" +
+                                    payload.path("status").asText() +
+                                    "]"
+                            );
+                            default -> {
+                            } // keep-alives and future event types
                         }
                     }
                 } catch (WorkspaceClientException e) {
@@ -80,9 +116,24 @@ public final class StreamAnAnswer {
                 }
 
                 // The final response, the same shape as query() returns.
-                JsonNode result = stream.getResult().map(r -> r.getBody()).orElseThrow();
-                System.out.println("pieces=" + pieces + " final answer length=" + result.path("answer").asText().length()
-                        + " sources=" + result.path("sources").size() + " memory=" + result.path("memory"));
+                JsonNode result = stream
+                    .getResult()
+                    .map(r -> r.getBody())
+                    .orElseThrow();
+                System.out.println(
+                    "Final status: " + result.path("status").asText()
+                );
+                WorkplaceResultPrinter.printAnswer(result);
+                System.out.println(
+                    "pieces=" +
+                        pieces +
+                        " final answer length=" +
+                        result.path("answer").asText().length() +
+                        " sources=" +
+                        result.path("sources").size() +
+                        " memory=" +
+                        result.path("memory")
+                );
             }
         });
     }

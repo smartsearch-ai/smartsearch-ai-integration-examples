@@ -18,25 +18,35 @@ Precondition. Your service key is a member of SMARTSEARCH_WORKSPACE_ID.
 Run: ./run.sh search_workplace_as_service "blood pressure"
 """
 
-from smartsearch_ai import WorkspaceQueryRequest
+import smartsearch_ai
 
-from examples._common import connect, print_documents, query_text, run, workspace_id
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    text = query_text(args, "travel policy")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    text = _common.query_text(args, "travel policy")
+    with _common.connect() as ss:
         # query sets the query text; nothing else is required.
-        request = WorkspaceQueryRequest(query=text)
+        request = smartsearch_ai.WorkspaceQueryRequest(query=text)
         # POST {api_url}/workspace/v1/workspaces/{workspace_id}/search
-        # Errors: SmartSearchError with the HTTP status (status_code) and the server's error code
+        # Errors: SmartSearchError with the HTTP status (status_code) and the
+        # server's error code
         # (code), for example when the key is not a member.
-        result = ss.workplace().search(workspace_id(), request)
-        # result.body = { "documents": [ { "title", "snippet", "source_url", ... }, ... ] }
-        # result.request_id identifies the call; quote it when reporting a problem.
-        print(f"HTTP {result.status_code} requestId={'present' if result.request_id is not None else 'none'}")
-        print_documents(result.body)
+        result = ss.workplace().search(_common.workspace_id(), request)
+        # result.body = { "documents": [ { "title", "snippet", "source_url", ...
+        # }, ... ] }
+        # result.request_id identifies the call; quote it when reporting a
+        # problem.
+        print(
+            f"HTTP {result.status_code} requestId={'present' if result.request_id is not None else 'none'}"
+        )
+        _common.print_documents(result.body)
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

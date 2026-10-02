@@ -28,22 +28,62 @@ import examples.ExampleRunner;
  */
 final class SearchResultPrinter {
 
-    private SearchResultPrinter() {
+    private SearchResultPrinter() {}
+
+    /**
+     * Requires application success independently of the HTTP status.
+     *
+     * @param result Core envelope returned by a search
+     * @return the same envelope when code is 1
+     * @throws IllegalStateException when Core reports an application failure
+     */
+    static SearchResult requireSuccess(SearchResult result) {
+        if (result.code() != 1) {
+            throw new IllegalStateException(
+                "Core search reported application failure (code=" +
+                    result.code() +
+                    ")"
+            );
+        }
+        return result;
     }
 
     /** One line per hit: the first field bare, the others as {@code name=value}. */
     static void printHits(SearchResult result, String... fields) {
-        JsonNode hits = result.result().path("hits").path("hits");
-        System.out.println("hits=" + hits.size() + " mode=" + result.effectiveNeuralMode()
-                + (result.warning() != null ? " warning=\"" + ExampleRunner.shorten(result.warning(), 160) + "\"" : ""));
+        JsonNode hits = requireSuccess(result)
+            .result()
+            .path("hits")
+            .path("hits");
+        System.out.println(
+            "hits=" +
+                hits.size() +
+                " mode=" +
+                result.effectiveNeuralMode() +
+                (result.warning() != null
+                    ? " warning=\"" +
+                      ExampleRunner.shorten(result.warning(), 160) +
+                      "\""
+                    : "")
+        );
         int rank = 1;
         for (JsonNode hit : hits) {
             JsonNode source = hit.path("_source");
-            StringBuilder line = new StringBuilder(String.format("%2d. ", rank++));
+            StringBuilder line = new StringBuilder(
+                String.format("%2d. ", rank++)
+            );
             for (int i = 0; i < fields.length; i++) {
-                if (!source.has(fields[i])) continue;
-                if (i > 0) line.append(" | ").append(fields[i]).append('=');
-                line.append(ExampleRunner.shorten(valueAsText(source.path(fields[i])), 60));
+                if (!source.has(fields[i])) {
+                    continue;
+                }
+                if (i > 0) {
+                    line.append(" | ").append(fields[i]).append('=');
+                }
+                line.append(
+                    ExampleRunner.shorten(
+                        valueAsText(source.path(fields[i])),
+                        60
+                    )
+                );
             }
             System.out.println(line);
         }
@@ -51,11 +91,17 @@ final class SearchResultPrinter {
 
     /** A field value as text. Lists of {name: ...} objects (such as genres) print as "A, B". */
     static String valueAsText(JsonNode value) {
-        if (!value.isArray()) return value.asText();
+        if (!value.isArray()) {
+            return value.asText();
+        }
         StringBuilder joined = new StringBuilder();
         for (JsonNode item : value) {
-            if (joined.length() > 0) joined.append(", ");
-            joined.append(item.has("name") ? item.path("name").asText() : item.asText());
+            if (joined.length() > 0) {
+                joined.append(", ");
+            }
+            joined.append(
+                item.has("name") ? item.path("name").asText() : item.asText()
+            );
         }
         return joined.toString();
     }

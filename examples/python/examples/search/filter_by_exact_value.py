@@ -13,33 +13,50 @@ Filtering on ``genres`` itself returns no hits and no error.
 Precondition: as ``first_search``. Run: ./run.sh filter_by_exact_value love
 """
 
-from smartsearch_ai import Filter, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "love")
-    with connect() as ss:
-        french = SearchQuery(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "love")
+    with _common.connect() as ss:
+        french = smartsearch_ai.SearchQuery(
             q,
             response_fields=["title", "original_language"],
-            filters=[Filter.term("original_language", "fr")],   # must equal "fr"
+            filters=[
+                smartsearch_ai.Filter.term("original_language", "fr")
+            ],  # must equal "fr"
             size=3,
         )
         print("original_language = fr:")
         # POST {api_url}/core/projects/{project_id}/search
-        print_hits(ss.search().search(project_id(), french), "title", "original_language")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), french),
+            "title",
+            "original_language",
+        )
 
-        comedies = SearchQuery(
+        comedies = smartsearch_ai.SearchQuery(
             q,
             response_fields=["title", "genres"],
-            filters=[Filter.term("genres.name", "Comedy")],     # a property inside a list of objects
+            filters=[
+                smartsearch_ai.Filter.term("genres.name", "Comedy")
+            ],  # a property inside a list of objects
             size=3,
         )
         print("genres.name = Comedy:")
-        print_hits(ss.search().search(project_id(), comedies), "title", "genres")
+        _common.print_hits(
+            ss.search().search(_common.project_id(), comedies),
+            "title",
+            "genres",
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

@@ -1,8 +1,20 @@
 # Python examples
 
-Each example is a single, self-contained script that teaches one thing and prints a short,
-readable result. They follow the same learning path as the [Java examples](../java), with the same
-explanations, arguments and output. The scripts are grouped by topic under
+You want to add search to your application. Start with one result you can inspect, then add
+one feature at a time. Choose your first task:
+
+| Your goal | Start here | Check the result |
+|---|---|---|
+| Search a regular project | `first_search` (step 2) | Matching document fields and the effective search mode |
+| Search a workspace's documents | `search_workplace_as_service` (step 31) | A document count and titles your service may read |
+| Register your application's users | `connect_and_check_access`, then `register_users` (steps 1, 40) | Provisioning capabilities, then an outcome for each submitted user |
+
+Registration is not required for service-key search. Step 1 checks the registration API; it
+does not prove access to every project or workspace. Check those with the corresponding search
+example.
+
+Each script teaches one idea. The learning path matches the [Java examples](../java), so you
+can compare the languages without learning another API. The scripts are grouped by topic under
 [`examples`](examples):
 
 | Folder | What is in it |
@@ -18,6 +30,10 @@ printers) is example plumbing, not part of the SDK.
 Every example starts with a plain-English explanation of the idea, when to use it and what it
 needs, and every call to SmartSearch AI is commented with the request it sends, what the
 parameters mean, what comes back and what can go wrong. Read the code alongside the output.
+
+For each step: **predict → run → inspect → change one thing**. Keep your query unchanged while
+adding a filter, for example, so you can see the filter's effect. You do not need to run all
+44 examples before building something useful.
 
 ## How SmartSearch AI fits together
 
@@ -40,14 +56,18 @@ parameters mean, what comes back and what can go wrong. Read the code alongside 
    python3 -m venv .venv && . .venv/bin/activate
    ```
 
-2. **The SDK** `smartsearch-ai` (it depends only on `httpx` and `pydantic`):
+2. **The SDK preview.** Public package publication is pending. Install the wheel supplied by
+   SmartSearch AI into that same virtual environment:
 
    ```bash
-   pip install smartsearch-ai
+   python -m pip install /path/to/smartsearch_ai-<version>-py3-none-any.whl
    ```
 
-   Until the SDK is published, install the wheel you received from SmartSearch AI instead:
-   `pip install smartsearch_ai-<version>-py3-none-any.whl`.
+   Replace the path and `<version>` with the actual file you received; do not paste the angle
+   brackets literally. If you do not have the wheel yet, obtain it before continuing. The
+   public package version differs from the internal release number. Once the public package
+   is published, installation by package name will be available. Its dependencies include
+   `httpx` and `pydantic`.
 
    Step 43 (`create_user_assertion`) signs a token with RSA, which Python's standard library
    cannot do; for that step also run `pip install cryptography`.
@@ -55,6 +75,10 @@ parameters mean, what comes back and what can go wrong. Read the code alongside 
 3. **Settings.** Copy [`.env.example`](../../.env.example) to `.env` at the repository root and
    fill it in. Every URL, key and ID is read from environment variables
    ([`_common.py`](examples/_common.py)); nothing is hard-coded.
+
+   The helper reads all three base URLs, the realm and your service-key ID/secret. Add the
+   resource ID needed for your chosen task. A source ID is needed only for source-specific
+   filtering or access grants; integration and tenant IDs are needed for registration.
 
 ### What each setting is
 
@@ -71,7 +95,7 @@ All values come from your **SmartSearch AI administrator**. The hosts below are 
 | `SMARTSEARCH_PROJECT_ID` | `your-project-id` | The project the search examples use. |
 | `SMARTSEARCH_USECASE_ID` | `your-use-case-id` | Optional: a use case of that project. |
 | `SMARTSEARCH_WORKSPACE_ID` | `your-workspace-id` | The Workplace workspace the Workplace examples use. |
-| `SMARTSEARCH_SOURCE_ID` | `your-source-id` | One source in that workspace. |
+| `SMARTSEARCH_SOURCE_ID` | `your-source-id` | Optional for general Workplace calls; required for source-filter and source-grant examples. |
 | `SMARTSEARCH_INTEGRATION_ID` | `your-integration-id` | Your provisioning integration (user registration). |
 | `SMARTSEARCH_TENANT_ID` | `your-tenant-id` | Your organisation's tenant, where users are registered. |
 
@@ -88,8 +112,9 @@ The requests the examples send are the same as in Java; see the
 
 ```bash
 cd examples/python
-./run.sh connect_and_check_access           # loads ../../.env, then runs the example
-./run.sh first_search "star wars"           # most examples take an optional query
+./run.sh first_search "star wars"           # an existing Movies project your key can search
+# Or, for an existing workspace:
+./run.sh search_workplace_as_service "refund" # choose a word from YOUR documents
 ```
 
 `run.sh` finds the script in any folder and runs it with `python3` from your `PATH` (set
@@ -103,10 +128,30 @@ python3 -m examples.search.first_search "star wars"
 On failure an example prints one `ERROR` line with the HTTP status and the server's message, and
 exits with status 1. It never prints tokens or secrets.
 
+### Read your first result
+
+A **hit** is one returned document. `first_search` prints its request, a response summary,
+then document fields. This output is **illustrative**; your documents and search mode may differ:
+
+```text
+code=1 message=Success searchId=present mode=BM25 warning=None
+  A matching movie (2000, rated 7.5)
+```
+
+A successful response with zero hits is different from a refused request. Try a known word
+from an accessible document before changing credentials. HTTP 200 alone is not sufficient:
+the search envelope must also report success (`code=1`).
+
+**Try it:** change `size=5` to `size=2` in `first_search.py`, predict the output, and run again.
+Then restore it and try `choose_searched_and_returned_fields`. Changing displayed fields should
+not by itself change which documents match.
+
 ## Java and Python names
 
 The Python SDK has the same calls as the Java SDK, with Python naming. Requests are immutable
-objects built with keyword arguments instead of builders:
+objects built with keyword arguments instead of builders. The table abbreviates SDK names;
+the examples use `import smartsearch_ai` and qualify them, for example
+`smartsearch_ai.SearchQuery(...)`, so you can see where each name comes from:
 
 | Java | Python |
 |---|---|
@@ -126,7 +171,8 @@ objects built with keyword arguments instead of builders:
 
 ## Learning path
 
-Work through the steps in order; each builds on the ones before. Every step is one script.
+Choose a part for your task, then work through that part in order. Every step is one script.
+Project search and Workplace are separate paths; user registration adds per-user identity.
 
 ### Part 1: Getting started
 
@@ -197,6 +243,12 @@ answering agent in it. Which call to use:
 
 ### Part 4: Your users
 
+These examples submit real registration jobs when run against a live environment. Use your
+administrator's test integration and the demo users shown in the source. Submission returns a
+job ID, not proof of success: wait for a terminal state and read each item's outcome. `PARTIAL`
+means some items failed. Keep the same idempotency key only when resubmitting the same request;
+change it when changing users or grants.
+
 | Step | Example | What you learn | Needs | Run |
 |---|---|---|---|---|
 | 40 | `register_users` | Register users from your system, linked to your identity provider | Provisioning integration | `./run.sh register_users` |
@@ -214,3 +266,34 @@ Java README: [Administrator setup](../java/README.md#administrator-setup-one-tim
 [Things worth knowing](../java/README.md#things-worth-knowing). In Python the read timeout is
 `SmartSearchAi(read_timeout=...)` (seconds, default 60) and a user token's expiry is
 `UserWorkplace.expires_at`.
+
+## When the result surprises you
+
+| What you see | What to check next |
+|---|---|
+| `ModuleNotFoundError: smartsearch_ai` | Install the supplied wheel with the same interpreter that runs the example. Check your activated virtual environment or `PYTHON` override. |
+| A missing environment variable | Fill in that exact name in the root `.env`; a resource ID is not a credential. |
+| Token acquisition fails | Check the auth URL, realm and service key with your administrator. Keep secrets and tokens out of bug reports. |
+| HTTP 403 or `SCOPE_DENIED` | Check access to the specific resource and operation and whether the resource is active. Permission to register users does not imply permission to search. |
+| A successful request returns no documents | Use a word from a document you can access; verify the resource ID and filters. Movie fields only apply to a project with that schema. |
+| A registration timeout | Keep the job ID and check that same job again; timeout does not cancel server work. |
+| A terminal `PARTIAL` or `FAILED` job | Inspect individual item states and error codes before treating users as registered. |
+
+## Check changes locally
+
+With the SDK preview and example dependencies installed, run from `examples/python`:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests run all 44 examples with in-memory HTTP fixtures and synthetic credentials. They
+also verify that failed search envelopes and unfinished provisioning jobs are reported as failures.
+
+## Writing another example
+
+Follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html).
+Use clear module and function docstrings, explaining arguments, returned values and meaningful
+exceptions where needed. Keep comments focused on decisions and API behavior. Describe one
+problem, show a command, explain how to recognize the result, and suggest one small experiment.
+Keep every example within the curated public integration API.

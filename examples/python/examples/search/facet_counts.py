@@ -15,38 +15,69 @@ document security.
 Run: ./run.sh facet_counts war
 """
 
-from smartsearch_ai import CardinalityAgg, Filter, SearchQuery, TermsAgg
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "war")
-    with connect() as ss:
-        faceted = SearchQuery(
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "war")
+    with _common.connect() as ss:
+        faceted = smartsearch_ai.SearchQuery(
             q,
             response_fields=["title"],
-            size=1,                                                       # hits are not the point here
-            aggs=[TermsAgg("languages", "original_language", 5),          # top 5 values with counts
-                  CardinalityAgg("distinct_languages", "original_language")],   # how many different values
+            size=1,  # hits are not the point here
+            aggs=[
+                smartsearch_ai.TermsAgg(
+                    "languages", "original_language", 5
+                ),  # top 5 values with counts
+                smartsearch_ai.CardinalityAgg(
+                    "distinct_languages", "original_language"
+                ),
+            ],  # how many different values
         )
         # POST {api_url}/core/projects/{project_id}/search
-        aggs = ss.search().search(project_id(), faceted).result.get("aggregations", {})
-        # aggregations = { "languages": { "buckets": [ {"key": "en", "doc_count": 120}, ... ] },
+        aggs = _common.require_success(
+            ss.search().search(_common.project_id(), faceted)
+        ).result.get("aggregations", {})
+        # aggregations = { "languages": { "buckets": [ {"key": "en",
+        # "doc_count": 120}, ... ] },
         #                  "distinct_languages": { "value": 17 } }
-        print(f"distinct languages: {aggs.get('distinct_languages', {}).get('value', '?')}")
+        print(
+            f"distinct languages: {aggs.get('distinct_languages', {}).get('value', '?')}"
+        )
         buckets = aggs.get("languages", {}).get("buckets", [])
         for b in buckets:
             print(f"  {b.get('key')} ({b.get('doc_count')})")
         if not buckets:
             return
-        # Drill down: the user clicks the first facet value, which becomes a filter.
+        # Drill down: the user clicks the first facet value, which becomes a
+        # filter.
         language = str(buckets[0]["key"])
         print(f"Drill down to original_language={language}:")
-        print_hits(ss.search().search(project_id(), SearchQuery(
-            q, size=3, response_fields=["title", "original_language"],
-            filters=[Filter.term("original_language", language)])), "title", "original_language")
+        _common.print_hits(
+            ss.search().search(
+                _common.project_id(),
+                smartsearch_ai.SearchQuery(
+                    q,
+                    size=3,
+                    response_fields=["title", "original_language"],
+                    filters=[
+                        smartsearch_ai.Filter.term(
+                            "original_language", language
+                        )
+                    ],
+                ),
+            ),
+            "title",
+            "original_language",
+        )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

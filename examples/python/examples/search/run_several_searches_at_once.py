@@ -11,25 +11,38 @@ entry comes back with more hits than you asked for. Take the first n of each lis
 Precondition: as ``first_search``. Run: ./run.sh run_several_searches_at_once
 """
 
-from smartsearch_ai import SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, project_id, run
+from examples import _common
 
 SHOW = 3
 
 
 def main(args: list[str]) -> None:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
     texts = args or ["alien", "titanic", "toy story"]
-    queries = [SearchQuery(q, response_fields=["title"], size=SHOW) for q in texts]
-    with connect() as ss:
-        # POST {api_url}/core/projects/{project_id}/mSearch   (body: a JSON array of the queries)
-        responses = ss.search().multi_search(project_id(), queries).result.get("responses", [])
+    queries = [
+        smartsearch_ai.SearchQuery(q, response_fields=["title"], size=SHOW)
+        for q in texts
+    ]
+    with _common.connect() as ss:
+        # POST {api_url}/core/projects/{project_id}/mSearch   (body: a JSON
+        # array of the queries)
+        responses = _common.require_success(
+            ss.search().multi_search(_common.project_id(), queries)
+        ).result.get("responses", [])
         for text, response in zip(texts, responses):
             hits = response.get("hits", {}).get("hits", [])
-            print(f'"{text}": received {len(hits)} hits, showing {min(SHOW, len(hits))}:')
+            print(
+                f'"{text}": received {len(hits)} hits, showing {min(SHOW, len(hits))}:'
+            )
             for hit in hits[:SHOW]:
                 print("  - " + str(hit.get("_source", {}).get("title")))
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)

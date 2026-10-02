@@ -11,26 +11,33 @@ keyword matching; semantic search compares meaning instead (see ``keyword_vs_sem
 Precondition: as ``first_search``. Run: ./run.sh choose_searched_and_returned_fields galaxy
 """
 
-from smartsearch_ai import NeuralMode, SearchQuery
+import smartsearch_ai
 
-from examples._common import connect, print_hits, project_id, query_text, run
+from examples import _common
 
 
 def main(args: list[str]) -> None:
-    q = query_text(args, "galaxy")
-    with connect() as ss:
+    """Runs this step after its module-level prerequisites are configured.
+
+    Args:
+        args: Query words or positional inputs shown in the run command.
+    """
+    q = _common.query_text(args, "galaxy")
+    with _common.connect() as ss:
         for searched in ("title", "overview"):
-            query = SearchQuery(
+            query = smartsearch_ai.SearchQuery(
                 q,
-                fields=[searched],            # search only this field
-                response_fields=["title"],    # but return only the title
-                neural_mode=NeuralMode.BM25,
+                fields=[searched],  # search only this field
+                response_fields=["title"],  # but return only the title
+                neural_mode=smartsearch_ai.NeuralMode.BM25,
                 size=3,
             )
             print(f'q="{q}" searched in {searched}:')
             # POST {api_url}/core/projects/{project_id}/search
-            print_hits(ss.search().search(project_id(), query), "title")
+            _common.print_hits(
+                ss.search().search(_common.project_id(), query), "title"
+            )
 
 
 if __name__ == "__main__":
-    run(main)
+    _common.run(main)
