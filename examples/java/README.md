@@ -61,7 +61,7 @@ All values come from your **SmartSearch AI administrator**. The hosts below are 
 | `SMARTSEARCH_PROJECT_ID` | `your-project-id` | The project the search examples use. |
 | `SMARTSEARCH_USECASE_ID` | `your-use-case-id` | Optional: a use case of that project. |
 | `SMARTSEARCH_WORKSPACE_ID` | `your-workspace-id` | The Workplace workspace the Workplace examples use. |
-| `SMARTSEARCH_SOURCE_ID` | `your-source-id` | One source in that workspace. |
+| `SMARTSEARCH_SOURCE_ID` | `your-source-id` | Optional for general Workplace calls; required for source-filter and source-grant examples. |
 | `SMARTSEARCH_INTEGRATION_ID` | `your-integration-id` | Your provisioning integration (user registration). |
 | `SMARTSEARCH_TENANT_ID` | `your-tenant-id` | Your organisation's tenant, where users are registered. |
 
@@ -186,20 +186,11 @@ answering agent in it. Which call to use:
 A SmartSearch AI Owner does this in the Admin UI. Your application never holds an Owner or
 administrator login or token.
 
-1. **Create a service key** for your integration, assign it the projects and workspaces it may
-   use, and give it the permissions it needs (for example query read and workspace read, plus
-   provisioning for steps 40-41).
-2. **Register your identity provider** (needed for steps 43-44): account menu
-   **⋮ → Identity providers**. The Owner enters your issuer (for example
-   `https://login.your-company.example.com`) and the URL where you publish your public keys (for
-   example `https://login.your-company.example.com/.well-known/jwks.json`); see step 43.
-3. **Let the key act as users** (needed for steps 42-44): **Edit service account → Act as
-   users**. This sets which identity providers are trusted, which operations the key may perform
-   as a user (search, query, chat) and on which workspaces and sources. Steps 43-44 use the JWT
-   authorization grant; step 42 also needs token exchange enabled for the key.
-4. **Provisioning integration** (needed for steps 40-41): your SmartSearch AI contact sets up the
-   integration that lets your key register users and grant workspace access, and gives you its
-   integration ID and your tenant ID.
+Follow [What your administrator sets up](../../README.md#what-your-administrator-sets-up):
+identity provider → service key → **Register users** → **Act as users**. The Owner configures
+and copies the integration ID directly in **Edit service account → Register users**; use the
+federated, no-password mode for steps 40-41. The key, users and allowed workspaces must share
+the tenant whose ID you put in `SMARTSEARCH_TENANT_ID`.
 
 ### Creating users without code (Admin UI)
 

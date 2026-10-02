@@ -5,6 +5,8 @@ are written for developers who have never used SmartSearch AI: follow the learni
 step, and read each example's comments alongside its output.
 
 > **Status:** preview. Java and Python examples are available, following the same learning path.
+> Use the supplied public SDK preview built from SDK 4.5.0.7. Package publication is pending;
+> follow the local artifact setup instructions below.
 
 ## What you can do
 
@@ -21,6 +23,28 @@ step, and read each example's comments alongside its output.
 |---|---|---|
 | Runtime | Java 21+ | Python 3.10+ |
 | SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` ([setup](examples/python/README.md#setup)) |
+
+## What your administrator sets up
+
+A SmartSearch AI Owner completes these steps in the Admin UI:
+
+1. **Identity provider:** under **⋮ → Identity providers**, register your issuer and public
+   JWKS URL for password-free users and signed assertions.
+2. **Service key:** create a key in your tenant, assign its projects/workspaces and required
+   permissions. Keep its secret on your backend.
+3. **Register users:** edit the saved service account and enable **Register users**. Choose
+   **No password: linked to their account in** and your registered identity provider for these
+   examples. Allow user registration and, for onboarding, the workspace/source grants. Save
+   and copy the **Integration ID**. Users, the key and allowed workspaces share one tenant.
+   The alternative email/password invitation mode needs configured outgoing email; these
+   examples demonstrate the federated mode.
+4. **Act as users:** enable this separately for per-user Workplace calls. Select trusted
+   providers and allowed operations/workspaces/sources; enable JWT grant for signed assertions
+   and token exchange for user access tokens. Registration alone does not enable delegation.
+
+Workspace load keys are for ingestion. Use a service key or the user's delegated identity for
+search, answers and chat. Managed workspace data must be searched through Workplace so access
+rules apply; do not substitute direct Core project searches.
 
 ## What your administrator gives you
 

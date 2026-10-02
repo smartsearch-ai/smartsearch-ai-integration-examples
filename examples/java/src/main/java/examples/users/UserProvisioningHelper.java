@@ -34,7 +34,7 @@ final class UserProvisioningHelper {
     }
 
     /**
-     * Polls a job once a second until it finishes or the timeout passes, and returns the last view.
+     * Polls a job once a second until it finishes; throws if the timeout passes.
      * GET {adminUrl}/search-admin/api/provisioning/v1/jobs/{jobId}
      */
     static JsonNode waitForJob(ProvisioningClient users, String jobId, Duration timeout) throws InterruptedException {
@@ -43,6 +43,10 @@ final class UserProvisioningHelper {
         while (!FINISHED.contains(job.path("state").asText()) && Instant.now().isBefore(deadline)) {
             Thread.sleep(1_000);
             job = users.getJob(jobId).getBody();
+        }
+        if (!FINISHED.contains(job.path("state").asText())) {
+            throw new IllegalStateException("Provisioning job " + jobId + " still " + job.path("state").asText()
+                    + " after " + timeout.toSeconds() + "s; poll this job again");
         }
         return job;
     }

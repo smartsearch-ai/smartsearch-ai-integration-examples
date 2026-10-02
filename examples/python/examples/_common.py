@@ -213,13 +213,15 @@ def tenant_scope() -> Scope:
 
 
 def wait_for_job(users: Users, job_id: str, timeout_seconds: float) -> dict[str, Any]:
-    """Polls a job once a second until it finishes or the timeout passes, and returns the last view.
+    """Polls a job once a second until it finishes; raises TimeoutError if the timeout passes.
     GET {admin_url}/search-admin/api/provisioning/v1/jobs/{job_id}"""
     deadline = time.monotonic() + timeout_seconds
     job = users.get_job(job_id).body
     while job.get("state") not in FINISHED and time.monotonic() < deadline:
         time.sleep(1)
         job = users.get_job(job_id).body
+    if job.get("state") not in FINISHED:
+        raise TimeoutError(f"Provisioning job {job_id} still {job.get('state')} after {timeout_seconds}s; poll this job again")
     return job
 
 
