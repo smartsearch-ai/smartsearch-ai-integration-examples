@@ -1,0 +1,44 @@
+1|connect_and_check_access|gettingstarted|What a service key is; connect and check what the key may do
+2|first_search|search|Build a request, send it, read the hits and the response envelope
+3|choose_searched_and_returned_fields|search|Where the query is looked for versus what each hit returns
+4|page_through_results|search|Paging with `from` and `size` (reranking off)
+5|sort_results|search|Sort by a field instead of relevance (reranking off)
+6|filter_by_exact_value|search|Yes/no conditions on an exact value, including properties inside lists
+7|filter_by_any_of_several_values|search|One field, any of several values (multi-select facets)
+8|filter_by_numeric_range|search|At least, at most, between
+9|filter_by_date_range|search|Date ranges
+10|filter_where_field_exists|search|Only documents that have a value in a field
+11|filter_by_full_text_match|search|Words anywhere in a text field
+12|filter_by_exact_phrase|search|Words together and in order
+13|exclude_results|search|Remove documents that match a condition
+14|combine_filters_with_any_of|search|AND, OR and NOT together
+15|boost_term_values|search|Move preferred documents up without removing others
+16|highlight_matches|search|Show why a result matched
+17|wildcard_and_prefix_search|search|`avat*` style queries
+18|correct_spelling|search|Find results despite typos
+19|clean_up_user_input|search|Trim spaces and remove special characters from typed text
+20|turn_off_query_expansion|search|Stop related-word expansion for one request
+21|facet_counts|search|Value counts, distinct counts, drill-down
+22|keyword_vs_semantic_vs_hybrid|search|The three search techniques, and checking which one ran
+23|tune_hybrid_search|search|How keyword and semantic results are fused
+24|limit_semantic_matches|search|How many close-in-meaning documents to consider and keep
+25|rerank_results|search|AI reranking on, off, and the project default
+26|tune_reranking|search|How many candidates to rerank; a minimum score
+27|precision_levels|search|Broad versus strict matching
+28|run_several_searches_at_once|search|Several searches in one round trip
+29|search_through_use_case|search|Search with a saved configuration
+30|handle_errors_and_warnings|search|Invalid requests, refusals, and adjusted answers
+31|search_workplace_as_service|workplace|Workplace concepts; search, query and chat; the documents that match
+32|filter_workplace_by_source_and_title|workplace|Limit a search to one source; filter on a document field
+33|ask_a_question|workplace|Query in answer mode: the request, and reading answer, sources, citations, run ID, status
+34|retrieve_sources_only|workplace|Query in retrieval-only mode: the evidence without an answer
+35|stream_an_answer|workplace|Stream a query answer as it is written; events, errors, timeouts
+36|answer_with_memory|workplace|Memory modes: STANDARD versus AGENTIC, and when to use each
+37|query_with_filters|workplace|Answer from one source and documents that pass a filter
+38|chat_with_follow_up_questions|workplace|Conversations: reuse the session for follow-ups
+39|stream_chat_answer|workplace|Stream a chat answer
+40|register_users|users|Register users from your system, linked to your identity provider
+41|register_users_with_workspace_access|users|Register a user and give workspace and source access
+42|search_workplace_as_user|workplace|Act as a user from the user's own access token, and search
+43|create_user_assertion|users|Build and sign the user assertion your backend creates (JWT, RS256), and the public key set (JWKS) to publish; optionally sign in with it
+44|sign_in_with_your_identity_provider|workplace|Act as a user who signed in to your identity provider; search and ask a question as them

@@ -1,13 +1,14 @@
 # SmartSearch AI Integration Examples
 
-Runnable examples that show how to integrate with **SmartSearch AI** from Java, Python and TypeScript. They
+Runnable examples that show how to integrate with **SmartSearch AI** from Java, Python,
+TypeScript and REST (`curl`). They
 are written for developers who have never used SmartSearch AI: follow the learning path step by
 step, and read each example's comments alongside its output.
 
-> **Status:** preview. Java, Python and TypeScript examples follow the same learning path.
+> **Status:** preview. All four versions follow the same learning path.
 > Use the supplied public SDK preview built from SDK 4.5.0.7. Package publication is pending;
-> follow the local artifact setup instructions below. TypeScript uses Node native HTTP calls
-> and has no unpublished SDK dependency.
+> follow the local artifact setup instructions below. TypeScript uses Node native HTTP calls;
+> REST uses `curl`. Neither depends on unpublished SDK packages.
 
 ## What you can do
 
@@ -20,10 +21,12 @@ step, and read each example's comments alongside its output.
 
 ## Prerequisites
 
-| | Java | Python | TypeScript |
-|---|---|---|---|
-| Runtime | Java 21+ | Python 3.10+ | Node.js 22.9+ |
-| SDK | `co.smartsearchai:smartsearch-ai` ([setup](examples/java/README.md#setup)) | `smartsearch-ai` ([setup](examples/python/README.md#setup)) | Native HTTP teaching helper ([setup](examples/typescript/README.md#set-up-once)) |
+| Version | Requirements and setup |
+|---|---|
+| [Java](examples/java/README.md) | Java 21+, Maven, `co.smartsearchai:smartsearch-ai` — [setup](examples/java/README.md#setup) |
+| [Python](examples/python/README.md) | Python 3.10+, `smartsearch-ai` — [setup](examples/python/README.md#setup) |
+| [TypeScript](examples/typescript/README.md) | Node.js 22.9+, native HTTP teaching helper — [setup](examples/typescript/README.md#set-up-once) |
+| [REST / curl](examples/rest/README.md) | Bash, `curl`, `jq`, Python 3; OpenSSL for the assertion demo — [setup](examples/rest/README.md). No SmartSearch SDK. |
 
 ## What your administrator sets up
 
@@ -55,7 +58,7 @@ rules apply; do not substitute direct Core project searches.
 |---|---|---|
 | API URL | `https://api.your-company.example.com` | Project search and Workplace |
 | Admin URL | `https://admin.your-company.example.com` | Registering users |
-| Auth URL and realm | `https://auth.your-company.example.com`, `your-realm` | Getting access tokens (the SDK does this) |
+| Auth URL and realm | `https://auth.your-company.example.com`, `your-realm` | Getting access tokens (handled by the SDK or example helper) |
 | Service key (ID `svc-…` and secret) | `svc-your-key-id` | Your application's identity |
 | Project, workspace and source IDs | `your-project-id` | What to search |
 | Integration and tenant IDs | `your-integration-id` | Registering users |
@@ -67,8 +70,9 @@ application.**
 ## Learning path
 
 The [Java README](examples/java/README.md#learning-path),
-[Python README](examples/python/README.md#learning-path) and
-[TypeScript README](examples/typescript/README.md#learning-path) list every step with its run command.
+[Python README](examples/python/README.md#learning-path),
+[TypeScript README](examples/typescript/README.md#learning-path) and
+[REST README](examples/rest/README.md#learning-path) list every step with its run command.
 In short:
 
 1. **Choose your task**: begin with project search or Workplace. If your key has provisioning
