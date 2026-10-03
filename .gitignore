@@ -10,3 +10,7 @@ venv/
 .idea/
 .vscode/
 .DS_Store
+
+# TypeScript example dependencies and generated output
+node_modules/
+examples/typescript/dist/
